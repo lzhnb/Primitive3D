@@ -10,11 +10,27 @@ project(
 # Primitive3D build options
 option(CUDA_ENABLED "Whether to enable CUDA, if available" ON)
 option(BUILD_PYTHON_MODULE "Build the python module" ON)
-
-add_definitions("-DCUDA_ENABLED")
+option(DRAY_OPTIX "Build the python module" ON)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CUDA_STANDARD 14)
+
+# Optix
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
+find_package(Optix)
+# set OptiX_INSTALL_DIR via your environment if it's not found automatically
+
+if (OptiX_FOUND OR OptiX_INCLUDE)
+	include_directories("${OptiX_INCLUDE}")
+    message("successfully include OptiX")
+	add_definitions(-DRAY_OPTIX)
+else()
+	message(WARNING
+		"OptiX was not found. Neural graphics primitives will still compile "
+		"and run correctly. However, ray casting will be significantly slower."
+	)
+endif()
 
 # torch extension
 find_package(Torch REQUIRED)

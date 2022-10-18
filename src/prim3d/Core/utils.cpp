@@ -1,6 +1,6 @@
 // Copyright 2022 Zhihao Liang
-#include <iostream>
 #include "utils.h"
+#include <iostream>
 
 namespace prim3d {
 void test() { std::cout << "hello world!" << std::endl; }

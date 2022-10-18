@@ -5,6 +5,7 @@ target_sources(libPrim3D PRIVATE bindings.cpp)
 target_link_libraries(
     libPrim3D PRIVATE
     Prim3D::Core
+    Prim3D::Utility
     ${TORCH_LIBRARIES}
     ${TORCH_PYTHON_LIBRARY})
 
