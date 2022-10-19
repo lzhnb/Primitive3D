@@ -9,6 +9,12 @@
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 
+#ifdef __NVCC__
+#define PRIM_HOST_DEVICE __host__ __device__
+#else
+#define PRIM_HOST_DEVICE
+#endif
+
 //////////////////////////////////////
 // CUDA ERROR HANDLING (EXCEPTIONS) //
 //////////////////////////////////////

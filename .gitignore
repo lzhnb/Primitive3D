@@ -3,6 +3,7 @@ __pycache__/
 
 # C/C++/CUDA extensions
 *.so
+*.ptx
 
 # Distribution / packaging
 build/

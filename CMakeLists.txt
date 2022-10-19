@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.4)
 
 # minimum version for modern cmake
 project(
-    Prim3D
-    DESCRIPTION "Primitive3D: Self-Pratice Library for 3D Data Processing." # Set PROJECT_DESCRIPTION
-    LANGUAGES CXX CUDA
+	Prim3D
+	DESCRIPTION "Primitive3D: Self-Pratice Library for 3D Data Processing." # Set PROJECT_DESCRIPTION
+	LANGUAGES CXX CUDA
 )
 
 # Primitive3D build options
@@ -19,11 +19,14 @@ set(CMAKE_CUDA_STANDARD 14)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 find_package(Optix)
-# set OptiX_INSTALL_DIR via your environment if it's not found automatically
 
-if (OptiX_FOUND OR OptiX_INCLUDE)
+# set OptiX_INSTALL_DIR via your environment if it's not found automatically
+if(OptiX_FOUND OR OptiX_INCLUDE)
 	include_directories("${OptiX_INCLUDE}")
-    message("successfully include OptiX")
+	message("successfully include OptiX")
+	# Find CUDA
+	find_package(CUDA REQUIRED)
+	# compile nvidia support libraries
 	add_definitions(-DRAY_OPTIX)
 else()
 	message(WARNING
@@ -36,7 +39,6 @@ endif()
 find_package(Torch REQUIRED)
 find_package(PythonLibs REQUIRED)
 find_library(TORCH_PYTHON_LIBRARY torch_python PATHS "${TORCH_INSTALL_PREFIX}/lib")
-
 
 # Add library
 add_subdirectory(src)
