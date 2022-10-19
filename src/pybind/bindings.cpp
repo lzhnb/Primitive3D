@@ -12,8 +12,8 @@ namespace py = pybind11;
 namespace prim3d {
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("test", &test);
-    
-    py::class_<RayCaster>(m, "RayCaster");
+
+    py::class_<RayCaster>(m, "RayCaster").def("cast", &RayCaster::cast);
     m.def("create_raycaster", &create_raycaster);
 }
 }  // namespace prim3d
