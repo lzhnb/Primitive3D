@@ -33,15 +33,18 @@ extern "C" __global__ void __raygen__rg() {
         p1);
 
     // Hit position
-    params.ray_origins[idx.x].x = int_as_float(p1);
+    const int32_t ray_id = idx.x;
+    params.hits[ray_id].w = int_as_float(p1);
 
     // If a triangle was hit, p0 is its index, otherwise p0 is -1.
     // Write out the triangle's normal if it (abuse the direction buffer).
     if ((int)p0 == -1) {
         return;
     }
-
-    params.ray_directions[idx.x] = params.triangles[p0].normal();
+    const float3 n = params.triangles[p0].normal();
+    params.hits[ray_id].x = n.x;
+    params.hits[ray_id].y = n.y;
+    params.hits[ray_id].z = n.z;
 }
 
 // miss program

@@ -37,13 +37,14 @@ __global__ void vertices_faces_to_triangles(
     triangles_ptr[triangle_id].c.z = vertices_ptr[p3 * 3 + 2];
 }
 
-__global__ void origins_directions_to_float3s(
+__global__ void init_rays(
     const int32_t num_rays,
     const float* __restrict__ origins_ptr,
     const float* __restrict__ directions_ptr,
     // output
     float3* __restrict__ ray_origins_ptr,
-    float3* __restrict__ ray_directions_ptr) {
+    float3* __restrict__ ray_directions_ptr,
+    float4* __restrict__ hits) {
     const int32_t ray_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (ray_id >= num_rays) return;
 
@@ -53,22 +54,25 @@ __global__ void origins_directions_to_float3s(
     ray_directions_ptr[ray_id].x = directions_ptr[ray_id * 3 + 0];
     ray_directions_ptr[ray_id].y = directions_ptr[ray_id * 3 + 1];
     ray_directions_ptr[ray_id].z = directions_ptr[ray_id * 3 + 2];
+    hits[ray_id].x = 0.0f;
+    hits[ray_id].y = 0.0f;
+    hits[ray_id].z = 0.0f;
+    hits[ray_id].w = 0.0f;
 }
 
 __global__ void export_depth_normals(
     const int32_t num_rays,
-    const float3* __restrict__ depths_ptr,
-    const float3* __restrict__ normals_ptr,
+    const float4* __restrict__ hits_ptr,
     // output
     float* __restrict__ output_depths_ptr,
     float* __restrict__ output_normals_ptr) {
     const int32_t ray_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (ray_id >= num_rays) return;
 
-    output_depths_ptr[ray_id] = depths_ptr[ray_id].x;
-    output_normals_ptr[ray_id * 3 + 0] = normals_ptr[ray_id].x;
-    output_normals_ptr[ray_id * 3 + 1] = normals_ptr[ray_id].y;
-    output_normals_ptr[ray_id * 3 + 2] = normals_ptr[ray_id].z;
+    output_depths_ptr[ray_id] = hits_ptr[ray_id].w;
+    output_normals_ptr[ray_id * 3 + 0] = hits_ptr[ray_id].x;
+    output_normals_ptr[ray_id * 3 + 1] = hits_ptr[ray_id].y;
+    output_normals_ptr[ray_id * 3 + 2] = hits_ptr[ray_id].z;
 }
 
 namespace prim3d {
@@ -375,31 +379,33 @@ public:
         cudaMalloc((void**)&ray_origins, sizeof(float3) * num_rays);
         float3* ray_directions = NULL;
         cudaMalloc((void**)&ray_directions, sizeof(float3) * num_rays);
+        float4* hits = NULL;
+        cudaMalloc((void**)&hits, sizeof(float4) * num_rays);
         const int32_t blocks = n_blocks_linear(num_rays);
 
         /* convert origins and directions to float3s */
-        origins_directions_to_float3s<<<blocks, n_threads_linear>>>(
+        init_rays<<<blocks, n_threads_linear>>>(
             num_rays,
             origins.data_ptr<float>(),
             directions.data_ptr<float>(),
             // output
             ray_origins,
-            ray_directions);
+            ray_directions,
+            hits);
 
         // invode optix ray casting
         RayCast::Params params = {};
         params.handle = m_gas_handle;
         params.ray_origins = ray_origins;
         params.ray_directions = ray_directions;
+        params.hits = hits;
         params.triangles = m_gpu_triangles;
-        // RayCast::Params params = {ray_origins, ray_directions, m_gpu_triangles, m_gas_handle};
         invoke(params, num_rays);
 
         // get the output
         export_depth_normals<<<blocks, n_threads_linear>>>(
             num_rays,
-            params.ray_origins,
-            params.ray_directions,
+            params.hits,
             // output
             depths.data_ptr<float>(),
             normals.data_ptr<float>());

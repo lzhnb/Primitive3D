@@ -59,6 +59,7 @@ struct RayCast {
     struct Params {
         float3 *ray_origins;
         float3 *ray_directions;
+        float4 *hits;
         const Triangle *triangles;
         OptixTraversableHandle handle;
     };
