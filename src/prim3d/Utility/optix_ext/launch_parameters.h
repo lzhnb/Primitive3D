@@ -55,14 +55,15 @@ struct Triangle {
 
     float3 a, b, c;
 };
-
-struct Params {
-    float3 *ray_origins;
-    float3 *ray_directions;
-    const Triangle *triangles;
-    OptixTraversableHandle handle;
+struct RayCast {
+    struct Params {
+        float3 *ray_origins;
+        float3 *ray_directions;
+        const Triangle *triangles;
+        OptixTraversableHandle handle;
+    };
+    struct RayGenData {};
+    struct HitGroupData {};
+    struct MissData {};
 };
-struct RayGenData {};
-struct HitGroupData {};
-struct MissData {};
 }  // namespace prim3d

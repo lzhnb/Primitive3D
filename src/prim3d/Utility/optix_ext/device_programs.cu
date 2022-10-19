@@ -4,7 +4,7 @@
 namespace prim3d {
 
 extern "C" {
-__constant__ Params params;
+__constant__ RayCast::Params params;
 }
 
 // ray generation program
@@ -15,7 +15,7 @@ extern "C" __global__ void __raygen__rg() {
     float3 ray_origin = params.ray_origins[idx.x];
     float3 ray_direction = params.ray_directions[idx.x];
 
-    unsigned int t, nx, ny, nz;  // holder for the payload
+    unsigned int p0, p1; // holder for the payload
     optixTrace(
         params.handle,
         ray_origin,
@@ -29,38 +29,31 @@ extern "C" __global__ void __raygen__rg() {
         1,  // SBT stride
         0,  // missSBTIndex
         // payload
-        t,
-        nx,
-        ny,
-        nz);
+        p0,
+        p1);
 
     // Hit position
-    params.ray_origins[idx.x].x = int_as_float(t);
+    params.ray_origins[idx.x].x = int_as_float(p1);
 
-    params.ray_directions[idx.x] =
-        make_float3(int_as_float(nx), int_as_float(ny), int_as_float(nz));
+    // If a triangle was hit, p0 is its index, otherwise p0 is -1.
+    // Write out the triangle's normal if it (abuse the direction buffer).
+    if ((int)p0 == -1) {
+        return;
+    }
+
+    params.ray_directions[idx.x] = params.triangles[p0].normal();
 }
 
 // miss program
 extern "C" __global__ void __miss__ms() {
-    optixSetPayload_0(float_as_int(-1.0f));
-    optixSetPayload_1(float_as_int(1.0f));
-    optixSetPayload_2(float_as_int(0.0f));
-    optixSetPayload_3(float_as_int(0.0f));
+    optixSetPayload_0((uint32_t)-1);
+    optixSetPayload_1(__float_as_int(optixGetRayTmax()));
 }
 
 // closest-hit program
 extern "C" __global__ void __closesthit__ch() {
-    const unsigned int t = optixGetRayTmax();
-
-    const Triangle* hit_triangle = (Triangle*)optixGetSbtDataPointer();
-    const float3 normal =
-        normalize(cross(hit_triangle->b - hit_triangle->a, hit_triangle->c - hit_triangle->a));
-
-    optixSetPayload_0(float_as_int(t));
-    optixSetPayload_1(float_as_int(normal.x));
-    optixSetPayload_2(float_as_int(normal.y));
-    optixSetPayload_3(float_as_int(normal.z));
+    optixSetPayload_0(optixGetPrimitiveIndex());
+    optixSetPayload_1(__float_as_int(optixGetRayTmax()));
 }
 
 }  // namespace prim3d
