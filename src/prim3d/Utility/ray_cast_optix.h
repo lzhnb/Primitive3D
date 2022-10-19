@@ -16,10 +16,10 @@ struct SbtRecord {
 class RayCaster {
 public:
     RayCaster() {}
-    ~RayCaster() {}
+    virtual ~RayCaster() {}
 
-    virtual void build_gas();
-    virtual void build_pipeline();
+    virtual void build_gas() = 0;
+    virtual void build_pipeline() = 0;
     virtual void invoke(
         const RayCast::Params& params, const int32_t height, const int32_t width) = 0;
 };
