@@ -3,7 +3,7 @@
 Primitive3D: Self-Pratice Library for 3D Data Processing.
 
 ## TODO
-- [ ] RayCasting
+- [x] OptiX RayCasting (debuging)
 - [ ] Marching Cubes
 
 

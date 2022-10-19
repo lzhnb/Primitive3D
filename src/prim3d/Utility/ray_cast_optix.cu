@@ -73,9 +73,9 @@ __global__ void export_depth_normals(
 }
 
 namespace prim3d {
-typedef SbtRecord<RayCast::RayGenData> RayGenSbtRecord;
-typedef SbtRecord<RayCast::MissData> MissSbtRecord;
-typedef SbtRecord<RayCast::HitGroupData> HitGroupSbtRecord;
+typedef SbtRecord<RayGenData> RayGenSbtRecord;
+typedef SbtRecord<MissData> MissSbtRecord;
+typedef SbtRecord<HitGroupData> HitGroupSbtRecord;
 
 class RayCasterImpl : public RayCaster {
 public:
@@ -337,14 +337,14 @@ public:
         }
     }
 
-    void invoke(const RayCast::Params& params, const int32_t num_rays) {
+    void invoke(const Params& params, const int32_t num_rays) {
         // Transfer params to the device
         CUdeviceptr d_param;
-        cudaMalloc(reinterpret_cast<void**>(&d_param), sizeof(RayCast::Params));
+        cudaMalloc(reinterpret_cast<void**>(&d_param), sizeof(Params));
         cudaMemcpy(
             reinterpret_cast<void*>(d_param), &params, sizeof(params), cudaMemcpyHostToDevice);
         OPTIX_CHECK_THROW(
-            optixLaunch(m_pipeline, 0, d_param, sizeof(RayCast::Params), &m_sbt, num_rays, 1, 1));
+            optixLaunch(m_pipeline, 0, d_param, sizeof(Params), &m_sbt, num_rays, 1, 1));
     }
 
     void cast(const Tensor& origins, const Tensor& directions, Tensor& depths, Tensor& normals) {
@@ -369,7 +369,7 @@ public:
         );
 
         // invode optix ray casting
-        RayCast::Params params = {ray_origins, ray_directions, m_gpu_triangles, m_gas_handle};
+        Params params = {ray_origins, ray_directions, m_gpu_triangles, m_gas_handle};
         invoke(params, num_rays);
 
         // get the output

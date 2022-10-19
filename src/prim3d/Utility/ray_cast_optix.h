@@ -24,7 +24,7 @@ public:
 
     virtual void build_gas(Triangle* triangles, const int32_t num_triangles) = 0;
     virtual void build_pipeline() = 0;
-    virtual void invoke(const RayCast::Params& params, const int32_t num_rays) = 0;
+    virtual void invoke(const Params& params, const int32_t num_rays) = 0;
     virtual void cast(
         const Tensor& origins, const Tensor& directions, Tensor& depths, Tensor& normals) = 0;
 };
