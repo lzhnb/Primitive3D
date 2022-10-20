@@ -46,15 +46,12 @@ public:
         uint32_t n_elements,
         const float* rays_o,
         const float* rays_d,
-        float* positions,
-        float* normals,
         float* depth,
+        float* normals,
         int32_t* face_id,
         const Triangle* gpu_triangles,
         cudaStream_t stream) = 0;
 
     static std::unique_ptr<TriangleBvh> make();
-
-    TriangleBvhNode* nodes_gpu() const { return m_nodes_gpu; }
 };
 }  // namespace prim3d

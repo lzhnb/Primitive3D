@@ -68,7 +68,7 @@ class CMakeBuild(build_ext):
         else:
             cmake_args += [f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={str(Path(extdir) / 'prim3d')}"]
             cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
-            build_args += ["--", "-j16"]
+            build_args += ["--", "-j8"]
 
         env = os.environ.copy()
         env[

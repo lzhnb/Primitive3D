@@ -1,6 +1,6 @@
 #include <Core/utils.h>
-
 #include <assert.h>
+
 #include <algorithm>
 #include <stack>
 
@@ -18,9 +18,8 @@ __global__ void raytrace_kernel(
     uint32_t n_elements,
     const float* __restrict__ rays_o,
     const float* __restrict__ rays_d,
-    float* __restrict__ positions,
-    float* __restrict__ normals,
     float* __restrict__ depth,
+    float* __restrict__ normals,
     int32_t* __restrict__ face_id,
     const TriangleBvhNode* __restrict__ nodes,
     const Triangle* __restrict__ triangles);
@@ -197,23 +196,14 @@ public:
         uint32_t n_elements,
         const float* rays_o,
         const float* rays_d,
-        float* positions,
-        float* normals,
         float* depth,
+        float* normals,
         int32_t* face_id,
         const Triangle* gpu_triangles,
         cudaStream_t stream) override {
         const int32_t blocks = n_blocks_linear(n_elements);
         raytrace_kernel<<<blocks, n_threads_linear>>>(
-            n_elements,
-            rays_o,
-            rays_d,
-            positions,
-            normals,
-            depth,
-            face_id,
-            m_nodes_gpu,
-            gpu_triangles);
+            n_elements, rays_o, rays_d, depth, normals, face_id, m_nodes_gpu, gpu_triangles);
     }
 
     void build(std::vector<Triangle>& triangles, uint32_t n_primitives_per_leaf) override {
@@ -300,7 +290,12 @@ public:
             m_nodes[node_idx].right_idx = (int)m_nodes.size();
         }
 
-        // m_nodes_gpu.resize_and_copy_from_host(m_nodes);
+        CUDA_CHECK(cudaMalloc((void**)&m_nodes_gpu, sizeof(TriangleBvhNode) * m_nodes.size()));
+        CUDA_CHECK(cudaMemcpy(
+            m_nodes_gpu,
+            &m_nodes[0],
+            sizeof(TriangleBvhNode) * m_nodes.size(),
+            cudaMemcpyHostToDevice));
     }
 
     TriangleBvhWithBranchingFactor() {}
@@ -316,9 +311,8 @@ __global__ void raytrace_kernel(
     uint32_t n_elements,
     const float* __restrict__ rays_o,
     const float* __restrict__ rays_d,
-    float* __restrict__ positions,
-    float* __restrict__ normals,
     float* __restrict__ depth,
+    float* __restrict__ normals,
     int32_t* __restrict__ face_id,
     const TriangleBvhNode* __restrict__ nodes,
     const Triangle* __restrict__ triangles) {
@@ -332,13 +326,6 @@ __global__ void raytrace_kernel(
 
     // write depth
     depth[i] = p.second;
-
-    // intersection point is written back to positions.
-    // non-intersect point reaches at most 10 depth
-    const float3 pos     = ro + p.second * rd;
-    positions[i * 3 + 0] = pos.x;
-    positions[i * 3 + 1] = pos.y;
-    positions[i * 3 + 2] = pos.z;
 
     // face normal is written to directions.
     if (p.first >= 0) {
