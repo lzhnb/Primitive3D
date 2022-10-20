@@ -37,44 +37,6 @@ __global__ void vertices_faces_to_triangles(
     triangles_ptr[triangle_id].c.z = vertices_ptr[p3 * 3 + 2];
 }
 
-__global__ void init_rays(
-    const int32_t num_rays,
-    const float* __restrict__ origins_ptr,
-    const float* __restrict__ directions_ptr,
-    // output
-    float3* __restrict__ ray_origins_ptr,
-    float3* __restrict__ ray_directions_ptr,
-    float4* __restrict__ hits) {
-    const int32_t ray_id = blockIdx.x * blockDim.x + threadIdx.x;
-    if (ray_id >= num_rays) return;
-
-    ray_origins_ptr[ray_id].x    = origins_ptr[ray_id * 3 + 0];
-    ray_origins_ptr[ray_id].y    = origins_ptr[ray_id * 3 + 1];
-    ray_origins_ptr[ray_id].z    = origins_ptr[ray_id * 3 + 2];
-    ray_directions_ptr[ray_id].x = directions_ptr[ray_id * 3 + 0];
-    ray_directions_ptr[ray_id].y = directions_ptr[ray_id * 3 + 1];
-    ray_directions_ptr[ray_id].z = directions_ptr[ray_id * 3 + 2];
-    hits[ray_id].x               = 0.0f;
-    hits[ray_id].y               = 0.0f;
-    hits[ray_id].z               = 0.0f;
-    hits[ray_id].w               = 0.0f;
-}
-
-__global__ void export_depth_normals(
-    const int32_t num_rays,
-    const float4* __restrict__ hits_ptr,
-    // output
-    float* __restrict__ output_depths_ptr,
-    float* __restrict__ output_normals_ptr) {
-    const int32_t ray_id = blockIdx.x * blockDim.x + threadIdx.x;
-    if (ray_id >= num_rays) return;
-
-    output_depths_ptr[ray_id]          = hits_ptr[ray_id].w;
-    output_normals_ptr[ray_id * 3 + 0] = hits_ptr[ray_id].x;
-    output_normals_ptr[ray_id * 3 + 1] = hits_ptr[ray_id].y;
-    output_normals_ptr[ray_id * 3 + 2] = hits_ptr[ray_id].z;
-}
-
 namespace prim3d {
 
 class RayCasterImpl : public RayCaster {
@@ -368,40 +330,20 @@ public:
     void cast(const Tensor& origins, const Tensor& directions, Tensor& depths, Tensor& normals) {
         CHECK_INPUT(origins);
         CHECK_INPUT(directions);
+        CHECK_INPUT(depths);
+        CHECK_INPUT(normals);
 
         const int32_t num_rays = origins.size(0);
-        const int32_t blocks   = n_blocks_linear(num_rays);
-        float3* ray_origins    = NULL;
-        float3* ray_directions = NULL;
-        float4* hits           = NULL;
-        cudaMalloc((void**)&ray_origins, sizeof(float3) * num_rays);
-        cudaMalloc((void**)&ray_directions, sizeof(float3) * num_rays);
-        cudaMalloc((void**)&hits, sizeof(float4) * num_rays);
-
-        /* convert origins and directions to float3s */
-        init_rays<<<blocks, n_threads_linear>>>(
-            num_rays,
-            origins.data_ptr<float>(),
-            directions.data_ptr<float>(),
-            // output
-            ray_origins,
-            ray_directions,
-            hits);
 
         // invode optix ray casting
-        invoke({ray_origins, ray_directions, hits, m_mesh.triangles, m_state.gas_handle}, num_rays);
-
-        // get the output
-        export_depth_normals<<<blocks, n_threads_linear>>>(
-            num_rays,
-            hits,
-            // output
-            depths.data_ptr<float>(),
-            normals.data_ptr<float>());
-
-        CUDA_CHECK(cudaFree(ray_origins));
-        CUDA_CHECK(cudaFree(ray_directions));
-        CUDA_CHECK(cudaFree(hits));
+        invoke(
+            {origins.data_ptr<float>(),
+             directions.data_ptr<float>(),
+             depths.data_ptr<float>(),
+             normals.data_ptr<float>(),
+             m_mesh.triangles,
+             m_state.gas_handle},
+            num_rays);
     }
 
 private:

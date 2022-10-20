@@ -12,8 +12,14 @@ extern "C" __global__ void __raygen__rg() {
     const uint3 idx = optixGetLaunchIndex();
     const uint3 dim = optixGetLaunchDimensions();
 
-    float3 ray_origin    = params.ray_origins[idx.x];
-    float3 ray_direction = params.ray_directions[idx.x];
+    const float3 ray_origin = make_float3(
+        params.ray_origins[idx.x * 3 + 0],
+        params.ray_origins[idx.x * 3 + 1],
+        params.ray_origins[idx.x * 3 + 2]);
+    const float3 ray_direction = make_float3(
+        params.ray_directions[idx.x * 3 + 0],
+        params.ray_directions[idx.x * 3 + 1],
+        params.ray_directions[idx.x * 3 + 2]);
 
     unsigned int prim_idx, t, nx, ny, nz;  // holder for the payload
     optixTrace(
@@ -36,18 +42,18 @@ extern "C" __global__ void __raygen__rg() {
         nz);
 
     // Hit position
-    const int32_t ray_id  = idx.x;
-    params.hits[ray_id].w = int_as_float(t);
+    const int32_t ray_id         = idx.x;
+    params.output_depths[ray_id] = int_as_float(t);
 
     // If a triangle was hit, prim_idx is its index, otherwise prim_idx is -1.
     // Write out the triangle's normal if it (abuse the direction buffer).
     if ((int32_t)prim_idx == -1) {
         return;
     }
-    const float3 n        = params.triangles[prim_idx].normal();
-    params.hits[ray_id].x = n.x;
-    params.hits[ray_id].y = n.y;
-    params.hits[ray_id].z = n.z;
+    const float3 normal                   = params.triangles[prim_idx].normal();
+    params.output_normals[ray_id * 3 + 0] = normal.x;
+    params.output_normals[ray_id * 3 + 1] = normal.y;
+    params.output_normals[ray_id * 3 + 2] = normal.z;
 }
 
 // miss program
@@ -61,7 +67,7 @@ extern "C" __global__ void __miss__ms() {
 
 // closest-hit program
 extern "C" __global__ void __closesthit__ch() {
-    const int32_t prim_idx                = (int32_t)optixGetPrimitiveIndex();
+    const int32_t prim_idx = (int32_t)optixGetPrimitiveIndex();
     // const RayCast::HitGroupData* sbt_data = (RayCast::HitGroupData*)optixGetSbtDataPointer();
     // const Triangle* triangles             = (Triangle*)(sbt_data->data);
     // const Triangle hit_triangle           = triangles[prim_idx];

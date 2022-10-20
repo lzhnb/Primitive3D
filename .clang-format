@@ -5,11 +5,11 @@ UseTab: Never
 ContinuationIndentWidth: 4
 AccessModifierOffset: -4
 
+## arguments&parameters break
 # aligning consecutive assignments when meeting consecutive =
 AlignConsecutiveAssignments: true
-
-# arguments&parameters break
 AlignAfterOpenBracket: AlwaysBreak
 BinPackArguments: false
 BinPackParameters: false
 SortIncludes: true
+

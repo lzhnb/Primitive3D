@@ -63,9 +63,10 @@ struct Mesh {
 
 struct RayCast {
     struct Params {
-        float3 *ray_origins;
-        float3 *ray_directions;
-        float4 *hits;
+        float *ray_origins;
+        float *ray_directions;
+        float *output_depths;
+        float *output_normals;
         const Triangle *triangles;
         OptixTraversableHandle handle;
     };
