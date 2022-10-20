@@ -309,7 +309,7 @@ public:
         }
     }
 
-    void invoke(const RayCast::Params& params, const int32_t num_rays) {
+    void launch_optix(const RayCast::Params& params, const int32_t num_rays) {
         /* Transfer params to the device */
         RayCast::Params* d_params = NULL;
 
@@ -335,7 +335,7 @@ public:
         CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_params)));
     }
 
-    void cast(
+    void invoke(
         const Tensor& origins,
         const Tensor& directions,
         Tensor& depths,
@@ -348,9 +348,9 @@ public:
         CHECK_INPUT(primitives_ids);
 
         const int32_t num_rays = origins.size(0);
-
+        
         // invode optix ray casting
-        invoke(
+        launch_optix(
             {origins.data_ptr<float>(),
              directions.data_ptr<float>(),
              depths.data_ptr<float>(),

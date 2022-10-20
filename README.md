@@ -8,9 +8,35 @@ export OptiX_INSTALL_DIR=$OptiX_INSTALL_DIR
 python setup.py develop
 ```
 
+## Examples
+- Ray Casting
+```python
+import torch
+import prim3d
+
+vertices: torch.Tensor # input vertices
+faces: torch.Tensor # input faces
+# create the ray caster
+ray_caster = prim3d._C.create_raycaster(vertices, faces)
+
+# setting ray origins and directions
+origins: torch.Tensor
+dirs: torch.Tensor
+
+# output contained
+depths: torch.Tensor
+normals: torch.Tensor
+primitive_ids: torch.Tensor
+
+# conduct ray casting
+ray_caster.invoke(origins, dirs, depths, normals, primitive_ids)
+```
+
 ## TODO
-- [x] OptiX RayCasting (debuging)
+- [x] OptiX RayCasting
+- [ ] SDF From Mesh
 - [ ] Marching Cubes
+- [ ] Documents
 
 
 ## Acknowledgement

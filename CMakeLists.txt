@@ -29,8 +29,7 @@ if(OptiX_FOUND OR OptiX_INCLUDE)
 	add_definitions(-DENABLE_OPTIX)
 else()
 	message(WARNING
-		"OptiX was not found. Neural graphics primitives will still compile "
-		"and run correctly. However, ray casting will be significantly slower."
+		"OptiX was not found."
 	)
 endif()
 
