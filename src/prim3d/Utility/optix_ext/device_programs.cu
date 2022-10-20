@@ -69,8 +69,8 @@ extern "C" __global__ void __miss__ms() {
 extern "C" __global__ void __closesthit__ch() {
     const RayCast::HitGroupData& sbt_data = *(RayCast::HitGroupData*)optixGetSbtDataPointer();
     const int32_t prim_idx                = (int32_t)optixGetPrimitiveIndex();
-    const OptixTriangleMesh mesh          = (OptixTriangleMesh)(sbt_data.data);
-    const OptixTriangle hit_triangle      = mesh.triangles[prim_idx];
+    const OptixTriangle* triangles        = (OptixTriangle*)(sbt_data.data);
+    const OptixTriangle hit_triangle      = triangles[prim_idx];
     const float3 n                        = hit_triangle.normal();
 
     optixSetPayload_0(prim_idx);

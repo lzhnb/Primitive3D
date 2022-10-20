@@ -2,7 +2,7 @@
 #include <array>
 #include <vector>
 
-#include "ray_cast_optix.h"
+#include "ray_cast.h"
 
 #ifdef ENABLE_OPTIX
 namespace optix_ptx {
@@ -66,13 +66,12 @@ public:
         CHECK_INPUT(faces);
         // conver the vertices and faces into triangles
         const int32_t num_triangles = faces.size(0);
-        m_mesh.num_triangles        = num_triangles;
-        m_mesh.triangles            = NULL;
-        cudaMalloc((void**)&m_mesh.triangles, sizeof(OptixTriangle) * num_triangles);
+        m_triangles = NULL;
+        cudaMalloc((void**)&m_triangles, sizeof(OptixTriangle) * num_triangles);
         const int32_t blocks = n_blocks_linear(num_triangles);
 
         vertices_faces_to_triangles<<<blocks, n_threads_linear>>>(
-            num_triangles, vertices.data_ptr<float>(), faces.data_ptr<int32_t>(), m_mesh.triangles);
+            num_triangles, vertices.data_ptr<float>(), faces.data_ptr<int32_t>(), m_triangles);
 
         // Specify options for the build. We use default options for simplicity.
         OptixAccelBuildOptions accel_options = {};
@@ -84,7 +83,7 @@ public:
         const uint32_t triangle_input_flags[1] = {OPTIX_GEOMETRY_FLAG_NONE};
         OptixBuildInput triangle_input         = {};
 
-        CUdeviceptr d_triangles = (CUdeviceptr)(uintptr_t)m_mesh.triangles;
+        CUdeviceptr d_triangles = (CUdeviceptr)(uintptr_t)m_triangles;
 
         triangle_input.type                        = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
         triangle_input.triangleArray.vertexFormat  = OPTIX_VERTEX_FORMAT_FLOAT3;
@@ -287,7 +286,7 @@ public:
             // we only have a single object type so far
             HitGroupSbtRecord hg_sbt_record = {};
             OPTIX_CHECK(optixSbtRecordPackHeader(m_state.hit_prog_group, &hg_sbt_record));
-            hg_sbt_record.data.data = m_mesh;
+            hg_sbt_record.data.data = m_triangles;
 
             // HitGroupSbtRecord hg_sbt_record = {};
             // OPTIX_CHECK(optixSbtRecordPackHeader(m_state.hit_prog_group, &hg_sbt_record));
@@ -430,7 +429,7 @@ public:
 private:
 #ifdef ENABLE_OPTIX
     RayCastingState m_state  = {};
-    OptixTriangleMesh m_mesh = {};
+    OptixTriangle* m_triangles = {};
 #else
 private:
     std::shared_ptr<TriangleBvh> triangle_bvh;

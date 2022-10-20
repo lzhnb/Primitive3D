@@ -15,11 +15,6 @@ struct OptixTriangle {
     float3 a, b, c;
 };
 
-struct OptixTriangleMesh {
-    OptixTriangle *triangles;
-    int32_t num_triangles;
-};
-
 struct RayCast {
     struct Params {
         float* ray_origins;
@@ -32,7 +27,7 @@ struct RayCast {
     struct RayGenData {};
     struct MissData {};
     struct HitGroupData {
-        OptixTriangleMesh data;
+        OptixTriangle *data;
     };
 };
 }  // namespace prim3d
