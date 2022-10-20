@@ -24,7 +24,7 @@
 #include "vec_math.h"
 // #include "triangle.cuh"
 
-#define OPTIX_CHECK_THROW(x)                                                      \
+#define OPTIX_CHECK(x)                                                            \
     do {                                                                          \
         OptixResult res = x;                                                      \
         if (res != OPTIX_SUCCESS) {                                               \
@@ -32,7 +32,7 @@
         }                                                                         \
     } while (0)
 
-#define OPTIX_CHECK_THROW_LOG(x)                                           \
+#define OPTIX_CHECK_LOG(x)                                                 \
     do {                                                                   \
         OptixResult res = x;                                               \
         const size_t sizeof_log_returned = sizeof_log;                     \

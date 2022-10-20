@@ -55,6 +55,7 @@ struct Triangle {
 
     float3 a, b, c;
 };
+
 struct RayCast {
     struct Params {
         float3 *ray_origins;

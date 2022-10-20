@@ -89,7 +89,7 @@ public:
         cudaFree(nullptr);
 
         // Initialize the OptiX API, loading all API entry points
-        OPTIX_CHECK_THROW(optixInit());
+        OPTIX_CHECK(optixInit());
 
         // Specify options for this context. We will use the default options.
         m_options = {};
@@ -99,7 +99,7 @@ public:
         m_cuCtx = 0;  // NULL means take the current active context
 
         m_context = nullptr;
-        OPTIX_CHECK_THROW(optixDeviceContextCreate(m_cuCtx, &m_options, &m_context));
+        OPTIX_CHECK(optixDeviceContextCreate(m_cuCtx, &m_options, &m_context));
     }
 
     void build_gas(Triangle* triangles, const int32_t num_triangles) {
@@ -141,7 +141,7 @@ public:
         cudaMalloc(
             reinterpret_cast<void**>(&m_gas_output_buffer), gas_buffer_sizes.outputSizeInBytes);
 
-        OPTIX_CHECK_THROW(optixAccelBuild(
+        OPTIX_CHECK(optixAccelBuild(
             m_context,
             0,  // CUDA stream
             &accel_options,
@@ -211,7 +211,7 @@ public:
             raygen_prog_group_desc.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
             raygen_prog_group_desc.raygen.module = m_module;
             raygen_prog_group_desc.raygen.entryFunctionName = "__raygen__rg";
-            OPTIX_CHECK_THROW_LOG(optixProgramGroupCreate(
+            OPTIX_CHECK_LOG(optixProgramGroupCreate(
                 m_context,
                 &raygen_prog_group_desc,
                 1,  // num program groups
@@ -224,7 +224,7 @@ public:
             miss_prog_group_desc.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
             miss_prog_group_desc.miss.module = m_module;
             miss_prog_group_desc.miss.entryFunctionName = "__miss__ms";
-            OPTIX_CHECK_THROW_LOG(optixProgramGroupCreate(
+            OPTIX_CHECK_LOG(optixProgramGroupCreate(
                 m_context,
                 &miss_prog_group_desc,
                 1,  // num program groups
@@ -237,7 +237,7 @@ public:
             hitgroup_prog_group_desc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
             hitgroup_prog_group_desc.hitgroup.moduleCH = m_module;
             hitgroup_prog_group_desc.hitgroup.entryFunctionNameCH = "__closesthit__ch";
-            OPTIX_CHECK_THROW_LOG(optixProgramGroupCreate(
+            OPTIX_CHECK_LOG(optixProgramGroupCreate(
                 m_context,
                 &hitgroup_prog_group_desc,
                 1,  // num program groups
@@ -270,13 +270,13 @@ public:
 
             OptixStackSizes stack_sizes = {};
             for (auto& prog_group : program_groups) {
-                OPTIX_CHECK_THROW(optixUtilAccumulateStackSizes(prog_group, &stack_sizes));
+                OPTIX_CHECK(optixUtilAccumulateStackSizes(prog_group, &stack_sizes));
             }
 
             uint32_t direct_callable_stack_size_from_traversal;
             uint32_t direct_callable_stack_size_from_state;
             uint32_t continuation_stack_size;
-            OPTIX_CHECK_THROW(optixUtilComputeStackSizes(
+            OPTIX_CHECK(optixUtilComputeStackSizes(
                 &stack_sizes,
                 max_trace_depth,
                 0,  // maxCCDepth
@@ -284,7 +284,7 @@ public:
                 &direct_callable_stack_size_from_traversal,
                 &direct_callable_stack_size_from_state,
                 &continuation_stack_size));
-            OPTIX_CHECK_THROW(optixPipelineSetStackSize(
+            OPTIX_CHECK(optixPipelineSetStackSize(
                 m_pipeline,
                 direct_callable_stack_size_from_traversal,
                 direct_callable_stack_size_from_state,
@@ -293,50 +293,50 @@ public:
                 ));
         }
 
-        /* The SBT shader binding table */
+        /* create SBT shader binding table */
         {
-            CUdeviceptr raygen_record;
+            CUdeviceptr d_raygen_record = 0;
             const size_t raygen_record_size = sizeof(RayGenSbtRecord);
-            cudaMalloc(reinterpret_cast<void**>(&raygen_record), raygen_record_size);
-            RayGenSbtRecord rg_sbt;
-            OPTIX_CHECK_THROW(optixSbtRecordPackHeader(raygen_prog_group, &rg_sbt));
-            cudaMemcpy(
-                reinterpret_cast<void*>(raygen_record),
-                &rg_sbt,
+            CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_raygen_record), raygen_record_size));
+            RayGenSbtRecord rg_sbt_record;
+            OPTIX_CHECK(optixSbtRecordPackHeader(raygen_prog_group, &rg_sbt_record));
+            CUDA_CHECK(cudaMemcpy(
+                reinterpret_cast<void*>(d_raygen_record),
+                &rg_sbt_record,
                 raygen_record_size,
-                cudaMemcpyHostToDevice);
+                cudaMemcpyHostToDevice));
 
-            CUdeviceptr miss_record;
+            CUdeviceptr d_miss_record = 0;
             size_t miss_record_size = sizeof(MissSbtRecord);
-            cudaMalloc(reinterpret_cast<void**>(&miss_record), miss_record_size);
-            MissSbtRecord ms_sbt;
-            OPTIX_CHECK_THROW(optixSbtRecordPackHeader(miss_prog_group, &ms_sbt));
-            cudaMemcpy(
-                reinterpret_cast<void*>(miss_record),
-                &ms_sbt,
+            CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_miss_record), miss_record_size));
+            MissSbtRecord ms_sbt_record;
+            OPTIX_CHECK(optixSbtRecordPackHeader(miss_prog_group, &ms_sbt_record));
+            CUDA_CHECK(cudaMemcpy(
+                reinterpret_cast<void*>(d_miss_record),
+                &ms_sbt_record,
                 miss_record_size,
-                cudaMemcpyHostToDevice);
+                cudaMemcpyHostToDevice));
 
-            CUdeviceptr hitgroup_record;
+            CUdeviceptr d_hitgroup_record = 0;
             size_t hitgroup_record_size = sizeof(HitGroupSbtRecord);
-
-            cudaMalloc(reinterpret_cast<void**>(&hitgroup_record), hitgroup_record_size);
-            HitGroupSbtRecord hg_sbt;
-            OPTIX_CHECK_THROW(optixSbtRecordPackHeader(hitgroup_prog_group, &hg_sbt));
-            cudaMemcpy(
-                reinterpret_cast<void*>(hitgroup_record),
-                &hg_sbt,
+            CUDA_CHECK(
+                cudaMalloc(reinterpret_cast<void**>(&d_hitgroup_record), hitgroup_record_size));
+            HitGroupSbtRecord hg_sbt_record;
+            OPTIX_CHECK(optixSbtRecordPackHeader(hitgroup_prog_group, &hg_sbt_record));
+            CUDA_CHECK(cudaMemcpy(
+                reinterpret_cast<void*>(d_hitgroup_record),
+                &hg_sbt_record,
                 hitgroup_record_size,
-                cudaMemcpyHostToDevice);
+                cudaMemcpyHostToDevice));
 
             m_sbt = {};
-            m_sbt.raygenRecord = raygen_record;
-            m_sbt.missRecordBase = miss_record;
+            m_sbt.raygenRecord = d_raygen_record;
+            m_sbt.missRecordBase = d_miss_record;
             m_sbt.missRecordStrideInBytes = sizeof(MissSbtRecord);
             m_sbt.missRecordCount = 1;
-            m_sbt.hitgroupRecordBase = hitgroup_record;
+            m_sbt.hitgroupRecordBase = d_hitgroup_record;
             m_sbt.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
-            m_sbt.hitgroupRecordCount = 1;
+            m_sbt.hitgroupRecordCount = 1; // the number of objects in hitgroup
         }
     }
 
@@ -344,11 +344,11 @@ public:
         /* Transfer params to the device */
         // create steram
         cudaStream_t launch_stream = NULL;
-        CUDA_CHECK_THROW(cudaStreamCreate(&launch_stream));
+        CUDA_CHECK(cudaStreamCreate(&launch_stream));
         RayCast::Params* d_params = NULL;
 
         // cuda parameters
-        CUDA_CHECK_THROW(cudaMalloc(reinterpret_cast<void**>(&d_params), sizeof(RayCast::Params)));
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_params), sizeof(RayCast::Params)));
         cudaMemcpyAsync(
             reinterpret_cast<void*>(d_params),
             &params,
@@ -357,7 +357,7 @@ public:
             launch_stream);
 
         // launch optix
-        OPTIX_CHECK_THROW(optixLaunch(
+        OPTIX_CHECK(optixLaunch(
             m_pipeline,
             launch_stream,
             reinterpret_cast<CUdeviceptr>(d_params),
@@ -367,7 +367,7 @@ public:
             1,
             1));
 
-        CUDA_CHECK_THROW(cudaFree(reinterpret_cast<void*>(d_params)));
+        CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_params)));
     }
 
     void cast(const Tensor& origins, const Tensor& directions, Tensor& depths, Tensor& normals) {

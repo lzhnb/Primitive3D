@@ -24,7 +24,7 @@
 #define FILE_LINE __FILE__ ":" STR(__LINE__)
 
 /// Checks the result of a cudaXXXXXX call and throws an error on failure
-#define CUDA_CHECK_THROW(x)                                                                        \
+#define CUDA_CHECK(x)                                                                              \
     do {                                                                                           \
         cudaError_t result = x;                                                                    \
         if (result != cudaSuccess)                                                                 \
