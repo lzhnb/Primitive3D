@@ -50,6 +50,7 @@ struct Triangle {
     }
 
     float3 a, b, c;
+    int32_t idx;
 };
 
 /* TODO: complete the Mesh structure*/

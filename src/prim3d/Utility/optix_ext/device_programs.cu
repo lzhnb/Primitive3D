@@ -60,7 +60,7 @@ extern "C" __global__ void __raygen__rg() {
 extern "C" __global__ void __miss__ms() {
     optixSetPayload_0((uint32_t)-1);
     optixSetPayload_1(float_as_int(optixGetRayTmax()));
-    optixSetPayload_2(float_as_int(1.0f));
+    optixSetPayload_2(float_as_int(0.0f));
     optixSetPayload_3(float_as_int(0.0f));
     optixSetPayload_4(float_as_int(0.0f));
 }

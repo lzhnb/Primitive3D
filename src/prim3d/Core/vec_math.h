@@ -147,6 +147,12 @@ SUTIL_INLINE SUTIL_HOSTDEVICE float2 fmaxf(const float2& a, const float2& b) {
 SUTIL_INLINE SUTIL_HOSTDEVICE float fmaxf(const float2& a) { return fmaxf(a.x, a.y); }
 /** @} */
 
+/** max axis */
+SUTIL_INLINE SUTIL_HOSTDEVICE int32_t max_axis(const float2& a) { return (a.x > a.y) ? 0 : 1; }
+
+/** min axis */
+SUTIL_INLINE SUTIL_HOSTDEVICE int32_t min_axis(const float2& a) { return (a.x > a.y) ? 1 : 0; }
+
 /** add
  * @{
  */
@@ -344,6 +350,24 @@ SUTIL_INLINE SUTIL_HOSTDEVICE float3 fmaxf(const float3& a, const float3& b) {
 }
 SUTIL_INLINE SUTIL_HOSTDEVICE float fmaxf(const float3& a) { return fmaxf(fmaxf(a.x, a.y), a.z); }
 /** @} */
+
+/** max axis */
+SUTIL_INLINE SUTIL_HOSTDEVICE int32_t max_axis(const float3& a) {
+    float max_val = fmaxf(a);
+    if (a.x == max_val) { return 0; }
+    if (a.y == max_val) { return 1; }
+    if (a.z == max_val) { return 2; }
+    return 0;
+}
+
+/** min axis */
+SUTIL_INLINE SUTIL_HOSTDEVICE int32_t min_axis(const float3& a) {
+    float min_val = fminf(a);
+    if (a.x == min_val) { return 0; }
+    if (a.y == min_val) { return 1; }
+    if (a.z == min_val) { return 2; }
+    return 0;
+}
 
 /** add
  * @{
@@ -555,6 +579,26 @@ SUTIL_INLINE SUTIL_HOSTDEVICE float fmaxf(const float4& a) {
     return fmaxf(fmaxf(a.x, a.y), fmaxf(a.z, a.w));
 }
 /** @} */
+
+/** max axis */
+SUTIL_INLINE SUTIL_HOSTDEVICE int32_t max_axis(const float4& a) {
+    float max_val = fmaxf(a);
+    if (a.x == max_val) { return 0; }
+    if (a.y == max_val) { return 1; }
+    if (a.z == max_val) { return 2; }
+    if (a.w == max_val) { return 3; }
+    return 0;
+}
+
+/** min axis */
+SUTIL_INLINE SUTIL_HOSTDEVICE int32_t min_axis(const float4& a) {
+    float min_val = fminf(a);
+    if (a.x == min_val) { return 0; }
+    if (a.y == min_val) { return 1; }
+    if (a.z == min_val) { return 2; }
+    if (a.w == min_val) { return 3; }
+    return 0;
+}
 
 /** add
  * @{
