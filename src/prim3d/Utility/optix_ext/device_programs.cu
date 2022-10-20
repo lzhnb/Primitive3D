@@ -50,6 +50,7 @@ extern "C" __global__ void __raygen__rg() {
     if ((int32_t)prim_idx == -1) {
         return;
     }
+    params.output_primitive_ids[ray_id]   = (int32_t)prim_idx;
     const float3 normal                   = params.triangles[prim_idx].normal();
     params.output_normals[ray_id * 3 + 0] = normal.x;
     params.output_normals[ray_id * 3 + 1] = normal.y;

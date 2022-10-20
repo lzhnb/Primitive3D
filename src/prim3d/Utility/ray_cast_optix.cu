@@ -327,11 +327,17 @@ public:
         CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_params)));
     }
 
-    void cast(const Tensor& origins, const Tensor& directions, Tensor& depths, Tensor& normals) {
+    void cast(
+        const Tensor& origins,
+        const Tensor& directions,
+        Tensor& depths,
+        Tensor& normals,
+        Tensor& primitives_ids) {
         CHECK_INPUT(origins);
         CHECK_INPUT(directions);
         CHECK_INPUT(depths);
         CHECK_INPUT(normals);
+        CHECK_INPUT(primitives_ids);
 
         const int32_t num_rays = origins.size(0);
 
@@ -341,6 +347,7 @@ public:
              directions.data_ptr<float>(),
              depths.data_ptr<float>(),
              normals.data_ptr<float>(),
+             primitives_ids.data_ptr<int32_t>(),
              m_mesh.triangles,
              m_state.gas_handle},
             num_rays);

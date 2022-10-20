@@ -67,11 +67,13 @@ struct RayCast {
         float *ray_directions;
         float *output_depths;
         float *output_normals;
+        int32_t *output_primitive_ids;
         const Triangle *triangles;
         OptixTraversableHandle handle;
     };
     struct RayGenData {};
     struct HitGroupData {
+        // Mesh data;
         // /// Pointer to the memory region of Shape data (e.g. \c Mesh )
         // void *data;
     };
