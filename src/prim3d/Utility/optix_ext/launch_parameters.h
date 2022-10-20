@@ -16,12 +16,12 @@ struct Triangle {
         float3 v1v0 = b - a;
         float3 v2v0 = c - a;
         float3 rov0 = ro - a;
-        n = cross(v1v0, v2v0);
-        float3 q = cross(rov0, rd);
-        float d = 1.0f / dot(rd, n);
-        float u = d * -dot(q, v2v0);
-        float v = d * dot(q, v1v0);
-        float t = d * -dot(n, rov0);
+        n           = cross(v1v0, v2v0);
+        float3 q    = cross(rov0, rd);
+        float d     = 1.0f / dot(rd, n);
+        float u     = d * -dot(q, v2v0);
+        float v     = d * dot(q, v1v0);
+        float t     = d * -dot(n, rov0);
         if (u < 0.0f || u > 1.0f || v < 0.0f || (u + v) > 1.0f || t < 0.0f) {
             t = 1e38f;  // No intersection
         }
@@ -56,6 +56,11 @@ struct Triangle {
     float3 a, b, c;
 };
 
+struct Mesh {
+    Triangle *triangles;
+    int32_t num_triangles;
+};
+
 struct RayCast {
     struct Params {
         float3 *ray_origins;
@@ -65,7 +70,10 @@ struct RayCast {
         OptixTraversableHandle handle;
     };
     struct RayGenData {};
-    struct HitGroupData {};
+    struct HitGroupData {
+        // /// Pointer to the memory region of Shape data (e.g. \c Mesh )
+        // void *data;
+    };
     struct MissData {};
 };
 }  // namespace prim3d

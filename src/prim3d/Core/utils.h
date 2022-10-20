@@ -15,10 +15,10 @@ namespace prim3d {
 
 void test();
 
-static constexpr float PI = 3.14159265358979323846f;
+static constexpr float PI    = 3.14159265358979323846f;
 static constexpr float SQRT2 = 1.41421356237309504880f;
 
-constexpr uint32_t n_threads_linear = 128;
+constexpr uint32_t n_threads_linear = 1024;
 
 template <typename T>
 T div_round_up(T val, T divisor) {

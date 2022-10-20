@@ -32,16 +32,16 @@
         }                                                                         \
     } while (0)
 
-#define OPTIX_CHECK_LOG(x)                                                 \
-    do {                                                                   \
-        OptixResult res = x;                                               \
-        const size_t sizeof_log_returned = sizeof_log;                     \
-        sizeof_log = sizeof(log); /* reset sizeof_log for future calls */  \
-        if (res != OPTIX_SUCCESS) {                                        \
-            throw std::runtime_error(                                      \
-                std::string("Optix call '" #x "' failed. Log:\n") + log +  \
-                (sizeof_log_returned == sizeof_log ? "" : "<truncated>")); \
-        }                                                                  \
+#define OPTIX_CHECK_LOG(x)                                                                      \
+    do {                                                                                        \
+        OptixResult res                  = x;                                                   \
+        const size_t sizeof_log_returned = sizeof_log;                                          \
+        sizeof_log                       = sizeof(log); /* reset sizeof_log for future calls */ \
+        if (res != OPTIX_SUCCESS) {                                                             \
+            throw std::runtime_error(                                                           \
+                std::string("Optix call '" #x "' failed. Log:\n") + log +                       \
+                (sizeof_log_returned == sizeof_log ? "" : "<truncated>"));                      \
+        }                                                                                       \
     } while (0)
 
 static std::vector<char> read_data(std::string const& filename) {

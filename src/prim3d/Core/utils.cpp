@@ -1,6 +1,6 @@
 // Copyright 2022 Zhihao Liang
-#include <iostream>
 #include "utils.h"
+#include <iostream>
 #include "common.h"
 #include "torch_utils.h"
 

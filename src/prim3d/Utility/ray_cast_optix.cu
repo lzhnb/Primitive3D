@@ -48,16 +48,16 @@ __global__ void init_rays(
     const int32_t ray_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (ray_id >= num_rays) return;
 
-    ray_origins_ptr[ray_id].x = origins_ptr[ray_id * 3 + 0];
-    ray_origins_ptr[ray_id].y = origins_ptr[ray_id * 3 + 1];
-    ray_origins_ptr[ray_id].z = origins_ptr[ray_id * 3 + 2];
+    ray_origins_ptr[ray_id].x    = origins_ptr[ray_id * 3 + 0];
+    ray_origins_ptr[ray_id].y    = origins_ptr[ray_id * 3 + 1];
+    ray_origins_ptr[ray_id].z    = origins_ptr[ray_id * 3 + 2];
     ray_directions_ptr[ray_id].x = directions_ptr[ray_id * 3 + 0];
     ray_directions_ptr[ray_id].y = directions_ptr[ray_id * 3 + 1];
     ray_directions_ptr[ray_id].z = directions_ptr[ray_id * 3 + 2];
-    hits[ray_id].x = 0.0f;
-    hits[ray_id].y = 0.0f;
-    hits[ray_id].z = 0.0f;
-    hits[ray_id].w = 0.0f;
+    hits[ray_id].x               = 0.0f;
+    hits[ray_id].y               = 0.0f;
+    hits[ray_id].z               = 0.0f;
+    hits[ray_id].w               = 0.0f;
 }
 
 __global__ void export_depth_normals(
@@ -69,16 +69,13 @@ __global__ void export_depth_normals(
     const int32_t ray_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (ray_id >= num_rays) return;
 
-    output_depths_ptr[ray_id] = hits_ptr[ray_id].w;
+    output_depths_ptr[ray_id]          = hits_ptr[ray_id].w;
     output_normals_ptr[ray_id * 3 + 0] = hits_ptr[ray_id].x;
     output_normals_ptr[ray_id * 3 + 1] = hits_ptr[ray_id].y;
     output_normals_ptr[ray_id * 3 + 2] = hits_ptr[ray_id].z;
 }
 
 namespace prim3d {
-typedef SbtRecord<RayCast::RayGenData> RayGenSbtRecord;
-typedef SbtRecord<RayCast::MissData> MissSbtRecord;
-typedef SbtRecord<RayCast::HitGroupData> HitGroupSbtRecord;
 
 class RayCasterImpl : public RayCaster {
 public:
@@ -101,27 +98,34 @@ public:
         OPTIX_CHECK(optixDeviceContextCreate(cuCtx, &options, &m_state.context));
     }
 
-    void build_gas(Triangle* triangles, const int32_t num_triangles) {
-        // set the gpu_triangles
-        m_gpu_triangles = triangles;
+    void build_gas(const Tensor& vertices, const Tensor& faces) {
+        // conver the vertices and faces into triangles
+        const int32_t num_triangles = faces.size(0);
+        m_mesh.num_triangles        = num_triangles;
+        m_mesh.triangles            = NULL;
+        cudaMalloc((void**)&m_mesh.triangles, sizeof(Triangle) * num_triangles);
+        const int32_t blocks = n_blocks_linear(num_triangles);
+
+        vertices_faces_to_triangles<<<blocks, n_threads_linear>>>(
+            num_triangles, vertices.data_ptr<float>(), faces.data_ptr<int32_t>(), m_mesh.triangles);
 
         // Specify options for the build. We use default options for simplicity.
         OptixAccelBuildOptions accel_options = {};
-        accel_options.buildFlags = OPTIX_BUILD_FLAG_NONE;
-        accel_options.operation = OPTIX_BUILD_OPERATION_BUILD;
+        accel_options.buildFlags             = OPTIX_BUILD_FLAG_NONE;
+        accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
         // Populate the build input struct with our triangle data as well as
         // information about the sizes and types of our data
         const uint32_t triangle_input_flags[1] = {OPTIX_GEOMETRY_FLAG_NONE};
-        OptixBuildInput triangle_input = {};
+        OptixBuildInput triangle_input         = {};
 
-        CUdeviceptr d_triangles = (CUdeviceptr)(uintptr_t)triangles;
+        CUdeviceptr d_triangles = (CUdeviceptr)(uintptr_t)m_mesh.triangles;
 
-        triangle_input.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
-        triangle_input.triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
-        triangle_input.triangleArray.numVertices = num_triangles * 3;
+        triangle_input.type                        = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+        triangle_input.triangleArray.vertexFormat  = OPTIX_VERTEX_FORMAT_FLOAT3;
+        triangle_input.triangleArray.numVertices   = num_triangles * 3;
         triangle_input.triangleArray.vertexBuffers = &d_triangles;
-        triangle_input.triangleArray.flags = triangle_input_flags;
+        triangle_input.triangleArray.flags         = triangle_input_flags;
         triangle_input.triangleArray.numSbtRecords = 1;
 
         // Query OptiX for the memory requirements for our GAS
@@ -136,9 +140,11 @@ public:
         // Allocate device memory for the scratch space buffer as well
         // as the GAS itself
         CUdeviceptr d_temp_buffer_gas;
-        CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_temp_buffer_gas), gas_buffer_sizes.tempSizeInBytes));
         CUDA_CHECK(cudaMalloc(
-            reinterpret_cast<void**>(&m_state.gas_output_buffer), gas_buffer_sizes.outputSizeInBytes));
+            reinterpret_cast<void**>(&d_temp_buffer_gas), gas_buffer_sizes.tempSizeInBytes));
+        CUDA_CHECK(cudaMalloc(
+            reinterpret_cast<void**>(&m_state.gas_output_buffer),
+            gas_buffer_sizes.outputSizeInBytes));
 
         OPTIX_CHECK(optixAccelBuild(
             m_state.context,
@@ -151,8 +157,8 @@ public:
             m_state.gas_output_buffer,
             gas_buffer_sizes.outputSizeInBytes,
             &m_state.gas_handle,  // Output handle to the struct
-            nullptr,        // emitted property list
-            0));            // num emitted properties
+            nullptr,              // emitted property list
+            0));                  // num emitted properties
 
         // We can now free scratch space used during the build
         CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_temp_buffer_gas)));
@@ -166,7 +172,7 @@ public:
         {
             // Default options for our module.
             OptixModuleCompileOptions module_compile_options = {};
-            
+
             // Pipeline options must be consistent for all modules used in a single pipeline
             m_state.pipeline_compile_options.usesMotionBlur = false;
 
@@ -183,9 +189,9 @@ public:
             m_state.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
             // read the ptx code during the compling
-            const char* ptx_code = (char*)optix_ptx::device_programs_ptx;
+            const char* ptx_code  = (char*)optix_ptx::device_programs_ptx;
             const size_t ptx_size = sizeof(optix_ptx::device_programs_ptx);
-            size_t sizeof_log = sizeof(log);
+            size_t sizeof_log     = sizeof(log);
 
             optixModuleCreateFromPTX(
                 m_state.context,
@@ -202,9 +208,9 @@ public:
         {
             OptixProgramGroupOptions program_group_options = {};  // Initialize to zeros
 
-            OptixProgramGroupDesc raygen_prog_group_desc = {};
-            raygen_prog_group_desc.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
-            raygen_prog_group_desc.raygen.module = m_state.ptx_module;
+            OptixProgramGroupDesc raygen_prog_group_desc    = {};
+            raygen_prog_group_desc.kind                     = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
+            raygen_prog_group_desc.raygen.module            = m_state.ptx_module;
             raygen_prog_group_desc.raygen.entryFunctionName = "__raygen__rg";
             OPTIX_CHECK_LOG(optixProgramGroupCreate(
                 m_state.context,
@@ -215,9 +221,9 @@ public:
                 &sizeof_log,
                 &m_state.raygen_prog_group));
 
-            OptixProgramGroupDesc miss_prog_group_desc = {};
-            miss_prog_group_desc.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
-            miss_prog_group_desc.miss.module = m_state.ptx_module;
+            OptixProgramGroupDesc miss_prog_group_desc  = {};
+            miss_prog_group_desc.kind                   = OPTIX_PROGRAM_GROUP_KIND_MISS;
+            miss_prog_group_desc.miss.module            = m_state.ptx_module;
             miss_prog_group_desc.miss.entryFunctionName = "__miss__ms";
             OPTIX_CHECK_LOG(optixProgramGroupCreate(
                 m_state.context,
@@ -228,9 +234,9 @@ public:
                 &sizeof_log,
                 &m_state.miss_prog_group));
 
-            OptixProgramGroupDesc hit_prog_group_desc = {};
-            hit_prog_group_desc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-            hit_prog_group_desc.hitgroup.moduleCH = m_state.ptx_module;
+            OptixProgramGroupDesc hit_prog_group_desc        = {};
+            hit_prog_group_desc.kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+            hit_prog_group_desc.hitgroup.moduleCH            = m_state.ptx_module;
             hit_prog_group_desc.hitgroup.entryFunctionNameCH = "__closesthit__ch";
             OPTIX_CHECK_LOG(optixProgramGroupCreate(
                 m_state.context,
@@ -244,13 +250,13 @@ public:
 
         /* linking */
         {
-            const uint32_t max_trace_depth = 1;
+            const uint32_t max_trace_depth      = 1;
             OptixProgramGroup program_groups[3] = {
                 m_state.raygen_prog_group, m_state.miss_prog_group, m_state.hit_prog_group};
 
             OptixPipelineLinkOptions pipeline_link_options = {};
-            pipeline_link_options.maxTraceDepth = max_trace_depth;
-            pipeline_link_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_DEFAULT;
+            pipeline_link_options.maxTraceDepth            = max_trace_depth;
+            pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_DEFAULT;
 
             // m_pipeline = nullptr;
             OPTIX_CHECK_LOG(optixPipelineCreate(
@@ -290,7 +296,7 @@ public:
 
         /* create SBT shader binding table */
         {
-            CUdeviceptr d_raygen_record = 0;
+            CUdeviceptr d_raygen_record     = 0;
             const size_t raygen_record_size = sizeof(RayGenSbtRecord);
             CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_raygen_record), raygen_record_size));
             RayGenSbtRecord rg_sbt_record;
@@ -302,7 +308,7 @@ public:
                 cudaMemcpyHostToDevice));
 
             CUdeviceptr d_miss_record = 0;
-            size_t miss_record_size = sizeof(MissSbtRecord);
+            size_t miss_record_size   = sizeof(MissSbtRecord);
             CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_miss_record), miss_record_size));
             MissSbtRecord ms_sbt_record;
             OPTIX_CHECK(optixSbtRecordPackHeader(m_state.miss_prog_group, &ms_sbt_record));
@@ -312,49 +318,43 @@ public:
                 miss_record_size,
                 cudaMemcpyHostToDevice));
 
-            CUdeviceptr d_hitgroup_record = 0;
-            size_t hitgroup_record_size = sizeof(HitGroupSbtRecord);
-            CUDA_CHECK(
-                cudaMalloc(reinterpret_cast<void**>(&d_hitgroup_record), hitgroup_record_size));
-            HitGroupSbtRecord hg_sbt_record;
+            HitGroupSbtRecord hg_sbt_record = {};
             OPTIX_CHECK(optixSbtRecordPackHeader(m_state.hit_prog_group, &hg_sbt_record));
+            CUdeviceptr d_hitgroup_record = 0;
+            size_t mesh_record_size       = sizeof(HitGroupSbtRecord);
+            CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_hitgroup_record), mesh_record_size));
             CUDA_CHECK(cudaMemcpy(
                 reinterpret_cast<void*>(d_hitgroup_record),
                 &hg_sbt_record,
-                hitgroup_record_size,
+                mesh_record_size,
                 cudaMemcpyHostToDevice));
 
-            m_state.sbt = {};
-            m_state.sbt.raygenRecord = d_raygen_record;
-            m_state.sbt.missRecordBase = d_miss_record;
-            m_state.sbt.missRecordStrideInBytes = sizeof(MissSbtRecord);
-            m_state.sbt.missRecordCount = 1;
-            m_state.sbt.hitgroupRecordBase = d_hitgroup_record;
-            m_state.sbt.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
-            m_state.sbt.hitgroupRecordCount = 1;  // the number of objects in hitgroup
+            m_state.sbt.raygenRecord                = d_raygen_record;
+            m_state.sbt.missRecordBase              = d_miss_record;
+            m_state.sbt.missRecordStrideInBytes     = static_cast<uint32_t>(miss_record_size);
+            m_state.sbt.missRecordCount             = 1;
+            m_state.sbt.hitgroupRecordBase          = d_hitgroup_record;
+            m_state.sbt.hitgroupRecordStrideInBytes = static_cast<uint32_t>(mesh_record_size);
+            m_state.sbt.hitgroupRecordCount         = 1;  // the number of objects in hitgroup
         }
     }
 
     void invoke(const RayCast::Params& params, const int32_t num_rays) {
         /* Transfer params to the device */
-        // create steram
-        cudaStream_t launch_stream = NULL;
-        CUDA_CHECK(cudaStreamCreate(&launch_stream));
         RayCast::Params* d_params = NULL;
 
         // cuda parameters
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_params), sizeof(RayCast::Params)));
-        cudaMemcpyAsync(
+        CUDA_CHECK(cudaMemcpy(
             reinterpret_cast<void*>(d_params),
             &params,
             sizeof(RayCast::Params),
-            cudaMemcpyHostToDevice,
-            launch_stream);
+            cudaMemcpyHostToDevice));
 
         // launch optix
         OPTIX_CHECK(optixLaunch(
             m_state.pipeline,
-            launch_stream,
+            0,
             reinterpret_cast<CUdeviceptr>(d_params),
             sizeof(RayCast::Params),
             &m_state.sbt,
@@ -370,13 +370,13 @@ public:
         CHECK_INPUT(directions);
 
         const int32_t num_rays = origins.size(0);
-        float3* ray_origins = NULL;
-        cudaMalloc((void**)&ray_origins, sizeof(float3) * num_rays);
+        const int32_t blocks   = n_blocks_linear(num_rays);
+        float3* ray_origins    = NULL;
         float3* ray_directions = NULL;
+        float4* hits           = NULL;
+        cudaMalloc((void**)&ray_origins, sizeof(float3) * num_rays);
         cudaMalloc((void**)&ray_directions, sizeof(float3) * num_rays);
-        float4* hits = NULL;
         cudaMalloc((void**)&hits, sizeof(float4) * num_rays);
-        const int32_t blocks = n_blocks_linear(num_rays);
 
         /* convert origins and directions to float3s */
         init_rays<<<blocks, n_threads_linear>>>(
@@ -389,18 +389,12 @@ public:
             hits);
 
         // invode optix ray casting
-        RayCast::Params params = {};
-        params.handle = m_state.gas_handle;
-        params.ray_origins = ray_origins;
-        params.ray_directions = ray_directions;
-        params.hits = hits;
-        params.triangles = m_gpu_triangles;
-        invoke(params, num_rays);
+        invoke({ray_origins, ray_directions, hits, m_mesh.triangles, m_state.gas_handle}, num_rays);
 
         // get the output
         export_depth_normals<<<blocks, n_threads_linear>>>(
             num_rays,
-            params.hits,
+            hits,
             // output
             depths.data_ptr<float>(),
             normals.data_ptr<float>());
@@ -412,25 +406,19 @@ public:
 
 private:
     RayCastingState m_state = {};
-    Triangle* m_gpu_triangles;
+    Mesh m_mesh             = {};
 };
 
 RayCaster* create_raycaster(const Tensor& vertices, const Tensor& faces) {
     CHECK_INPUT(vertices);
     CHECK_INPUT(faces);
 
-    // conver the vertices and faces into triangles
-    const int32_t num_triangles = faces.size(0);
-    Triangle* triangles = NULL;
-    cudaMalloc((void**)&triangles, sizeof(Triangle) * num_triangles);
-    const int32_t blocks = n_blocks_linear(num_triangles);
-
-    vertices_faces_to_triangles<<<blocks, n_threads_linear>>>(
-        num_triangles, vertices.data_ptr<float>(), faces.data_ptr<int32_t>(), triangles);
-
     RayCaster* ray_caster = new RayCasterImpl{};
-    ray_caster->build_gas(triangles, num_triangles);
+    // build geometry acceleration structure
+    ray_caster->build_gas(vertices, faces);
+    // build the shading pipeline
     ray_caster->build_pipeline();
+
     return ray_caster;
 }
 }  // namespace prim3d

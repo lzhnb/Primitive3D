@@ -19,4 +19,7 @@ python setup.py develop
 - [instant-npg](https://github.com/NVlabs/instant-ngp)
 - [AnalyticMesh](https://github.com/Gorilla-Lab-SCUT/AnalyticMesh)
 
+## ResourcesPermalink
+- [How to get started with OptiX 7](https://developer.nvidia.com/blog/how-to-get-started-with-optix-7/)
+
 > Please feel free to discuss :)
