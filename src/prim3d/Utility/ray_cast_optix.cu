@@ -8,7 +8,6 @@
 namespace optix_ptx {
 #include <optix_ptx.h>
 }
-#endif
 
 // Kernels
 
@@ -17,7 +16,7 @@ __global__ void vertices_faces_to_triangles(
     const float* __restrict__ vertices_ptr,
     const int32_t* __restrict__ faces_ptr,
     // output
-    prim3d::Triangle* __restrict__ triangles_ptr) {
+    prim3d::OptixTriangle* __restrict__ triangles_ptr) {
     const int32_t triangle_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (triangle_id >= num_triangles) return;
 
@@ -38,6 +37,7 @@ __global__ void vertices_faces_to_triangles(
     triangles_ptr[triangle_id].c.z = vertices_ptr[p3 * 3 + 2];
 }
 
+#endif
 namespace prim3d {
 
 class RayCasterImpl : public RayCaster {
@@ -68,7 +68,7 @@ public:
         const int32_t num_triangles = faces.size(0);
         m_mesh.num_triangles        = num_triangles;
         m_mesh.triangles            = NULL;
-        cudaMalloc((void**)&m_mesh.triangles, sizeof(Triangle) * num_triangles);
+        cudaMalloc((void**)&m_mesh.triangles, sizeof(OptixTriangle) * num_triangles);
         const int32_t blocks = n_blocks_linear(num_triangles);
 
         vertices_faces_to_triangles<<<blocks, n_threads_linear>>>(
@@ -429,8 +429,8 @@ public:
 
 private:
 #ifdef ENABLE_OPTIX
-    RayCastingState m_state = {};
-    TriangleMesh m_mesh     = {};
+    RayCastingState m_state  = {};
+    OptixTriangleMesh m_mesh = {};
 #else
 private:
     std::shared_ptr<TriangleBvh> triangle_bvh;

@@ -1,5 +1,5 @@
 // Copyright 2022 Zhihao Liang
-#include <Geometry/triangle.h>
+#include <Core/vec_math.h>
 #include <optix.h>
 #include <optix_stubs.h>
 // NOTE: optix_stubs must be before!!!
@@ -7,6 +7,18 @@
 #include <optix_stack_size.h>
 
 namespace prim3d {
+
+// NOTE: OptixTriangle just contain a,b,c (for the trianglearray)
+struct OptixTriangle {
+    SUTIL_HOSTDEVICE float3 normal() const { return normalize(cross(b - a, c - a)); }
+
+    float3 a, b, c;
+};
+
+struct OptixTriangleMesh {
+    OptixTriangle *triangles;
+    int32_t num_triangles;
+};
 
 struct RayCast {
     struct Params {
@@ -20,7 +32,7 @@ struct RayCast {
     struct RayGenData {};
     struct MissData {};
     struct HitGroupData {
-        TriangleMesh data;
+        OptixTriangleMesh data;
     };
 };
 }  // namespace prim3d
