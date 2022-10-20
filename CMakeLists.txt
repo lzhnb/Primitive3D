@@ -10,7 +10,6 @@ project(
 # Primitive3D build options
 option(CUDA_ENABLED "Whether to enable CUDA, if available" ON)
 option(BUILD_PYTHON_MODULE "Build the python module" ON)
-option(DRAY_OPTIX "Build the python module" ON)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CUDA_STANDARD 14)
@@ -27,7 +26,7 @@ if(OptiX_FOUND OR OptiX_INCLUDE)
 	# Find CUDA
 	find_package(CUDA REQUIRED)
 	# compile nvidia support libraries
-	add_definitions(-DRAY_OPTIX)
+	add_definitions(-DENABLE_OPTIX)
 else()
 	message(WARNING
 		"OptiX was not found. Neural graphics primitives will still compile "

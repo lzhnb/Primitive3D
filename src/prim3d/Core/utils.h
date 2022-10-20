@@ -8,9 +8,6 @@
 #include <cmath>
 #include <cstdint>
 
-// #include <cuda.h>
-// #include <cuda_runtime.h>
-
 namespace prim3d {
 
 void test();

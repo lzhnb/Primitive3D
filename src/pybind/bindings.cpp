@@ -13,7 +13,9 @@ namespace prim3d {
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("test", &test);
 
+#ifdef ENABLE_OPTIX
     py::class_<RayCaster>(m, "RayCaster").def("cast", &RayCaster::cast);
     m.def("create_raycaster", &create_raycaster);
+#endif
 }
 }  // namespace prim3d

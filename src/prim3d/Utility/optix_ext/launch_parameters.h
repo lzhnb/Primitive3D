@@ -1,3 +1,4 @@
+// Copyright 2022 Zhihao Liang
 #include <optix.h>
 #include <optix_stubs.h>
 //
@@ -8,7 +9,7 @@
 
 namespace prim3d {
 
-struct Triangle {
+struct OptixTriangle {
     __host__ __device__ float3 normal() const { return normalize(cross(b - a, c - a)); }
 
     // based on https://www.iquilezles.org/www/articles/intersectors/intersectors.htm
@@ -56,8 +57,8 @@ struct Triangle {
     float3 a, b, c;
 };
 
-struct Mesh {
-    Triangle *triangles;
+struct OptixMesh {
+    OptixTriangle *triangles;
     int32_t num_triangles;
 };
 
@@ -68,15 +69,12 @@ struct RayCast {
         float *output_depths;
         float *output_normals;
         int32_t *output_primitive_ids;
-        const Triangle *triangles;
         OptixTraversableHandle handle;
     };
     struct RayGenData {};
-    struct HitGroupData {
-        // Mesh data;
-        // /// Pointer to the memory region of Shape data (e.g. \c Mesh )
-        // void *data;
-    };
     struct MissData {};
+    struct HitGroupData {
+        OptixMesh data;
+    };
 };
 }  // namespace prim3d

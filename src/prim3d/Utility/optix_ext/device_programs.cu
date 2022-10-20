@@ -1,3 +1,4 @@
+// Copyright 2022 Zhihao Liang
 #include <optix.h>
 #include "launch_parameters.h"
 
@@ -51,10 +52,9 @@ extern "C" __global__ void __raygen__rg() {
         return;
     }
     params.output_primitive_ids[ray_id]   = (int32_t)prim_idx;
-    const float3 normal                   = params.triangles[prim_idx].normal();
-    params.output_normals[ray_id * 3 + 0] = normal.x;
-    params.output_normals[ray_id * 3 + 1] = normal.y;
-    params.output_normals[ray_id * 3 + 2] = normal.z;
+    params.output_normals[ray_id * 3 + 0] = int_as_float(nx);
+    params.output_normals[ray_id * 3 + 1] = int_as_float(ny);
+    params.output_normals[ray_id * 3 + 2] = int_as_float(nz);
 }
 
 // miss program
@@ -68,17 +68,17 @@ extern "C" __global__ void __miss__ms() {
 
 // closest-hit program
 extern "C" __global__ void __closesthit__ch() {
-    const int32_t prim_idx = (int32_t)optixGetPrimitiveIndex();
-    // const RayCast::HitGroupData* sbt_data = (RayCast::HitGroupData*)optixGetSbtDataPointer();
-    // const Triangle* triangles             = (Triangle*)(sbt_data->data);
-    // const Triangle hit_triangle           = triangles[prim_idx];
-    // const float3 n                        = hit_triangle.normal();
+    const int32_t prim_idx                = (int32_t)optixGetPrimitiveIndex();
+    const RayCast::HitGroupData& sbt_data = *(RayCast::HitGroupData*)optixGetSbtDataPointer();
+    const OptixMesh mesh                  = (OptixMesh)(sbt_data.data);
+    const OptixTriangle hit_triangle      = mesh.triangles[prim_idx];
+    const float3 n                        = hit_triangle.normal();
 
     optixSetPayload_0(prim_idx);
     optixSetPayload_1(float_as_int(optixGetRayTmax()));
-    optixSetPayload_2(float_as_int(1.0f));
-    optixSetPayload_3(float_as_int(0.0f));
-    optixSetPayload_4(float_as_int(0.0f));
+    optixSetPayload_2(float_as_int(n.x));
+    optixSetPayload_3(float_as_int(n.y));
+    optixSetPayload_4(float_as_int(n.z));
 }
 
 }  // namespace prim3d

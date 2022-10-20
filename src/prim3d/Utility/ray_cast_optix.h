@@ -1,11 +1,11 @@
+// Copyright 2022 Zhihao Liang
 #pragma once
 #include <torch/script.h>
 #include <iostream>
 #include <memory>
 
-#include <Core/torch_utils.h>
+#include <Core/common.h>
 #include "optix_ext/launch_parameters.h"
-#include "optix_ext/utils.h"
 
 using torch::Tensor;
 

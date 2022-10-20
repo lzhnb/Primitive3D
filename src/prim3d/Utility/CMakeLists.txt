@@ -1,6 +1,6 @@
 # Add executable and library
 set(SOURCES
-    ray_cast_optix.cu
+    temp.cpp
 )
 
 if(OptiX_FOUND OR OptiX_INCLUDE)
@@ -19,7 +19,8 @@ if(OptiX_FOUND OR OptiX_INCLUDE)
     set(OPTIX_PTX_HEADER ${CMAKE_CURRENT_BINARY_DIR}/optix_ext/optix_ptx.h)
 
     find_program(bin_to_c NAMES bin2c PATHS ${CUDA_COMPILER_BIN})
-    if (NOT bin_to_c)
+
+    if(NOT bin_to_c)
         message(FATAL_ERROR
             "bin2c not found:\n"
             "  CMAKE_CUDA_COMPILER='${CMAKE_CUDA_COMPILER}'\n"
@@ -38,8 +39,8 @@ if(OptiX_FOUND OR OptiX_INCLUDE)
         DEPENDS optix_program
         COMMENT "Converting PTX files to a C header"
     )
-    
-	list(APPEND SOURCES ${OPTIX_PTX_HEADER})
+
+    list(APPEND SOURCES ray_cast_optix.cu ${OPTIX_PTX_HEADER})
 endif()
 
 add_library(Utility SHARED ${SOURCES})
