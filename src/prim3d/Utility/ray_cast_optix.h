@@ -16,6 +16,24 @@ struct SbtRecord {
     T data;
 };
 
+struct RayCastingState {
+    OptixDeviceContext context = 0;
+    OptixTraversableHandle gas_handle = 0;  // Traversable handle for triangle AS
+    CUdeviceptr gas_output_buffer = 0;    // Triangle AS memory
+
+    OptixPipelineCompileOptions pipeline_compile_options = {};
+    OptixModule ptx_module = 0;
+    OptixPipeline pipeline = 0;
+
+    // ProgramGroups
+    OptixProgramGroup raygen_prog_group = 0;
+    OptixProgramGroup miss_prog_group = 0;
+    OptixProgramGroup hit_prog_group = 0;
+
+    RayCast::Params params = {};
+    OptixShaderBindingTable sbt = {};
+};
+
 // abstract class of RayCaster
 class RayCaster {
 public:

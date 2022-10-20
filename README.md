@@ -1,6 +1,12 @@
 # Primitive3D
 
-Primitive3D: Self-Pratice Library for 3D Data Processing.
+Primitive3D: Self-Pratice Library for pytorch-based 3D Data Processing.
+
+# Installation
+```sh
+export OptiX_INSTALL_DIR=$OptiX_INSTALL_DIR
+python setup.py develop
+```
 
 ## TODO
 - [x] OptiX RayCasting (debuging)

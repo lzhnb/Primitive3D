@@ -15,7 +15,7 @@ extern "C" __global__ void __raygen__rg() {
     float3 ray_origin = params.ray_origins[idx.x];
     float3 ray_direction = params.ray_directions[idx.x];
 
-    unsigned int p0, p1; // holder for the payload
+    unsigned int p0, t; // holder for the payload
     optixTrace(
         params.handle,
         ray_origin,
@@ -30,11 +30,11 @@ extern "C" __global__ void __raygen__rg() {
         0,  // missSBTIndex
         // payload
         p0,
-        p1);
+        t);
 
     // Hit position
     const int32_t ray_id = idx.x;
-    params.hits[ray_id].w = int_as_float(p1);
+    params.hits[ray_id].w = int_as_float(t);
 
     // If a triangle was hit, p0 is its index, otherwise p0 is -1.
     // Write out the triangle's normal if it (abuse the direction buffer).

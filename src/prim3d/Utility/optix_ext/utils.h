@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-#include "vec_math.h"
+// #include "vec_math.h"
 // #include "triangle.cuh"
 
 #define OPTIX_CHECK(x)                                                            \
