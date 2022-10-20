@@ -1,5 +1,6 @@
 // Copyright 2022 Zhihao Liang
 #include <optix.h>
+
 #include "launch_parameters.h"
 
 namespace prim3d {
@@ -48,9 +49,7 @@ extern "C" __global__ void __raygen__rg() {
 
     // If a triangle was hit, prim_idx is its index, otherwise prim_idx is -1.
     // Write out the triangle's normal if it (abuse the direction buffer).
-    if ((int32_t)prim_idx == -1) {
-        return;
-    }
+    if ((int32_t)prim_idx == -1) { return; }
     params.output_primitive_ids[ray_id]   = (int32_t)prim_idx;
     params.output_normals[ray_id * 3 + 0] = int_as_float(nx);
     params.output_normals[ray_id * 3 + 1] = int_as_float(ny);

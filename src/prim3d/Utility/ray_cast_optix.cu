@@ -1,9 +1,9 @@
 // Copyright 2022 Zhihao Liang
-#include <array>
-#include <vector>
-
 #include <Core/common.h>
 #include <Core/utils.h>
+
+#include <array>
+#include <vector>
 
 #include "ray_cast_optix.h"
 
@@ -348,7 +348,7 @@ public:
         CHECK_INPUT(primitives_ids);
 
         const int32_t num_rays = origins.size(0);
-        
+
         // invode optix ray casting
         launch_optix(
             {origins.data_ptr<float>(),
@@ -362,7 +362,7 @@ public:
 
 private:
     RayCastingState m_state = {};
-    TriangleMesh m_mesh       = {};
+    TriangleMesh m_mesh     = {};
 };
 
 RayCaster* create_raycaster(const Tensor& vertices, const Tensor& faces) {

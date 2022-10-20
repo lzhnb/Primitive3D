@@ -6,10 +6,16 @@ ContinuationIndentWidth: 4
 AccessModifierOffset: -4
 
 ## arguments&parameters break
-# aligning consecutive assignments when meeting consecutive =
+# # align consecutive declarations
+# AlignConsecutiveDeclarations: true
+# align consecutive assignments
 AlignConsecutiveAssignments: true
+# align consecutive comments
+AlignTrailingComments: true
 AlignAfterOpenBracket: AlwaysBreak
+AllowShortBlocksOnASingleLine : Empty
 BinPackArguments: false
 BinPackParameters: false
 SortIncludes: true
+AlwaysBreakTemplateDeclarations: Yes
 
