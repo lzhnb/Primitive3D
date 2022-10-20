@@ -1,9 +1,8 @@
 // Copyright 2022 Zhihao Liang
+#include <Core/utils.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <torch/extension.h>
-
-#include <Core/utils.h>
 
 #ifdef ENABLE_OPTIX
 #include <Utility/ray_cast_optix.h>

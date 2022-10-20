@@ -1,10 +1,11 @@
 // Copyright 2022 Zhihao Liang
 #pragma once
+#include <Core/common.h>
 #include <torch/script.h>
+
 #include <iostream>
 #include <memory>
 
-#include <Core/common.h>
 #include "optix_ext/launch_parameters.h"
 
 using torch::Tensor;
@@ -45,8 +46,8 @@ public:
     RayCaster() {}
     virtual ~RayCaster() {}
 
-    virtual void build_gas(const Tensor& vertices, const Tensor& faces)        = 0;
-    virtual void build_pipeline()                                              = 0;
+    virtual void build_gas(const Tensor& vertices, const Tensor& faces)              = 0;
+    virtual void build_pipeline()                                                    = 0;
     virtual void launch_optix(const RayCast::Params& params, const int32_t num_rays) = 0;
     virtual void invoke(
         const Tensor& origins,

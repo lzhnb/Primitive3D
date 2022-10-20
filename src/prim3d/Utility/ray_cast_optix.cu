@@ -18,7 +18,7 @@ __global__ void vertices_faces_to_triangles(
     const float* __restrict__ vertices_ptr,
     const int32_t* __restrict__ faces_ptr,
     // output
-    prim3d::OptixTriangle* __restrict__ triangles_ptr) {
+    prim3d::Triangle* __restrict__ triangles_ptr) {
     const int32_t triangle_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (triangle_id >= num_triangles) return;
 
@@ -67,7 +67,7 @@ public:
         const int32_t num_triangles = faces.size(0);
         m_mesh.num_triangles        = num_triangles;
         m_mesh.triangles            = NULL;
-        cudaMalloc((void**)&m_mesh.triangles, sizeof(OptixTriangle) * num_triangles);
+        cudaMalloc((void**)&m_mesh.triangles, sizeof(Triangle) * num_triangles);
         const int32_t blocks = n_blocks_linear(num_triangles);
 
         vertices_faces_to_triangles<<<blocks, n_threads_linear>>>(
@@ -362,7 +362,7 @@ public:
 
 private:
     RayCastingState m_state = {};
-    OptixMesh m_mesh       = {};
+    TriangleMesh m_mesh       = {};
 };
 
 RayCaster* create_raycaster(const Tensor& vertices, const Tensor& faces) {

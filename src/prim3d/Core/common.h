@@ -3,15 +3,15 @@
 #ifdef ENABLE_OPTIX
 #include <optix.h>
 #endif
+#include <cuda_fp16.h>
+#include <cuda_runtime.h>
+
 #include <array>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <fstream>
-
-#include <cuda_fp16.h>
-#include <cuda_runtime.h>
 
 #ifdef __NVCC__
 #define PRIM_HOST_DEVICE __host__ __device__

@@ -47,14 +47,15 @@ add_library(Utility SHARED ${SOURCES})
 add_library(Prim3D::Utility ALIAS Utility)
 set_target_properties(Utility PROPERTIES OUTPUT_NAME "Prim3D-Utility")
 
+include_directories(..)
 target_include_directories(
     Utility PRIVATE
-    ..
     ${PYTHON_INCLUDE_DIRS})
 
 target_link_libraries(
     Utility PUBLIC
     Prim3D::Core
+    Prim3D::Geometry
     ${optix_LIBRARY}
     ${CUDA_LIBRARIES}
     ${CUDA_CUDA_LIBRARY}

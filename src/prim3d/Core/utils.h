@@ -1,12 +1,11 @@
 // Copyright 2022 Zhihao Liang
 #pragma once
 
+#include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <string>
 #include <vector>
-
-#include <cmath>
-#include <cstdint>
 
 namespace prim3d {
 
