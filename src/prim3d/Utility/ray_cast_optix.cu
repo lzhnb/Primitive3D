@@ -409,6 +409,10 @@ public:
             // output
             depths.data_ptr<float>(),
             normals.data_ptr<float>());
+
+        CUDA_CHECK(cudaFree(ray_origins));
+        CUDA_CHECK(cudaFree(ray_directions));
+        CUDA_CHECK(cudaFree(hits));
     }
 
 private:
