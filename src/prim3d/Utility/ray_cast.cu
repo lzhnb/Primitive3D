@@ -2,11 +2,9 @@
 #include <array>
 #include <vector>
 
-#include <Core/common.h>
-#include <Core/utils.h>
+#include "ray_cast.h"
 
-#include "ray_cast_optix.h"
-
+#ifdef ENABLE_OPTIX
 namespace optix_ptx {
 #include <optix_ptx.h>
 }
@@ -18,7 +16,7 @@ __global__ void vertices_faces_to_triangles(
     const float* __restrict__ vertices_ptr,
     const int32_t* __restrict__ faces_ptr,
     // output
-    prim3d::Triangle* __restrict__ triangles_ptr) {
+    prim3d::OptixTriangle* __restrict__ triangles_ptr) {
     const int32_t triangle_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (triangle_id >= num_triangles) return;
 
@@ -39,11 +37,12 @@ __global__ void vertices_faces_to_triangles(
     triangles_ptr[triangle_id].c.z = vertices_ptr[p3 * 3 + 2];
 }
 
+#endif
 namespace prim3d {
 
 class RayCasterImpl : public RayCaster {
+#ifdef ENABLE_OPTIX
 public:
-    // accept numpy array (cpu) to init
     RayCasterImpl() : RayCaster() {
         /* init optix and create context*/
         // Initialize CUDA with a no-op call to the the CUDA runtime API
@@ -63,15 +62,16 @@ public:
     }
 
     void build_gas(const Tensor& vertices, const Tensor& faces) {
+        CHECK_INPUT(vertices);
+        CHECK_INPUT(faces);
         // conver the vertices and faces into triangles
         const int32_t num_triangles = faces.size(0);
-        m_mesh.num_triangles        = num_triangles;
-        m_mesh.triangles            = NULL;
-        cudaMalloc((void**)&m_mesh.triangles, sizeof(Triangle) * num_triangles);
+        m_triangles = NULL;
+        cudaMalloc((void**)&m_triangles, sizeof(OptixTriangle) * num_triangles);
         const int32_t blocks = n_blocks_linear(num_triangles);
 
         vertices_faces_to_triangles<<<blocks, n_threads_linear>>>(
-            num_triangles, vertices.data_ptr<float>(), faces.data_ptr<int32_t>(), m_mesh.triangles);
+            num_triangles, vertices.data_ptr<float>(), faces.data_ptr<int32_t>(), m_triangles);
 
         // Specify options for the build. We use default options for simplicity.
         OptixAccelBuildOptions accel_options = {};
@@ -83,7 +83,7 @@ public:
         const uint32_t triangle_input_flags[1] = {OPTIX_GEOMETRY_FLAG_NONE};
         OptixBuildInput triangle_input         = {};
 
-        CUdeviceptr d_triangles = (CUdeviceptr)(uintptr_t)m_mesh.triangles;
+        CUdeviceptr d_triangles = (CUdeviceptr)(uintptr_t)m_triangles;
 
         triangle_input.type                        = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
         triangle_input.triangleArray.vertexFormat  = OPTIX_VERTEX_FORMAT_FLOAT3;
@@ -286,7 +286,7 @@ public:
             // we only have a single object type so far
             HitGroupSbtRecord hg_sbt_record = {};
             OPTIX_CHECK(optixSbtRecordPackHeader(m_state.hit_prog_group, &hg_sbt_record));
-            hg_sbt_record.data.data = m_mesh;
+            hg_sbt_record.data.data = m_triangles;
 
             // HitGroupSbtRecord hg_sbt_record = {};
             // OPTIX_CHECK(optixSbtRecordPackHeader(m_state.hit_prog_group, &hg_sbt_record));
@@ -335,6 +335,58 @@ public:
         CUDA_CHECK(cudaFree(reinterpret_cast<void*>(d_params)));
     }
 
+#else
+
+public:
+    RayCasterImpl() : RayCaster() {}
+
+    void build_bvh(const Tensor& vertices, const Tensor& faces) {
+        // confirm the cpu tensor
+        CHECK_CPU_INPUT(vertices);
+        CHECK_CPU_INPUT(faces);
+
+        // conver the vertices and faces into triangles
+        const int32_t num_triangles = faces.size(0);
+        std::vector<Triangle> triangles_cpu;
+        triangles_cpu.resize(num_triangles);
+
+        const int32_t* faces_ptr  = faces.data_ptr<int32_t>();
+        const float* vertices_ptr = vertices.data_ptr<float>();
+        for (size_t tri_id = 0; tri_id < num_triangles; tri_id++) {
+            const int32_t p1_id   = faces_ptr[tri_id * 3 + 0];
+            const int32_t p2_id   = faces_ptr[tri_id * 3 + 1];
+            const int32_t p3_id   = faces_ptr[tri_id * 3 + 2];
+            triangles_cpu[tri_id] = {
+                make_float3(
+                    vertices_ptr[p1_id * 3 + 0],
+                    vertices_ptr[p1_id * 3 + 1],
+                    vertices_ptr[p1_id * 3 + 2]),
+                make_float3(
+                    vertices_ptr[p2_id * 3 + 0],
+                    vertices_ptr[p2_id * 3 + 1],
+                    vertices_ptr[p2_id * 3 + 2]),
+                make_float3(
+                    vertices_ptr[p3_id * 3 + 0],
+                    vertices_ptr[p3_id * 3 + 1],
+                    vertices_ptr[p3_id * 3 + 2]),
+                (int32_t)tri_id};
+        }
+
+        if (!triangle_bvh) { triangle_bvh = TriangleBvh::make(); }
+
+        triangle_bvh->build(triangles_cpu, 8);
+        CUDA_CHECK(cudaDeviceSynchronize());
+
+        CUDA_CHECK(cudaMalloc((void**)&triangles_gpu, sizeof(Triangle) * num_triangles));
+        CUDA_CHECK(cudaMemcpy(
+            triangles_gpu,
+            &triangles_cpu[0],
+            sizeof(Triangle) * num_triangles,
+            cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaDeviceSynchronize());
+    }
+#endif
+
     void invoke(
         const Tensor& origins,
         const Tensor& directions,
@@ -348,7 +400,8 @@ public:
         CHECK_INPUT(primitives_ids);
 
         const int32_t num_rays = origins.size(0);
-        
+
+#ifdef ENABLE_OPTIX
         // invode optix ray casting
         launch_optix(
             {origins.data_ptr<float>(),
@@ -358,23 +411,45 @@ public:
              primitives_ids.data_ptr<int32_t>(),
              m_state.gas_handle},
             num_rays);
+#else
+        // TODO
+        cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+        triangle_bvh->ray_trace_gpu(
+            num_rays,
+            origins.data_ptr<float>(),
+            directions.data_ptr<float>(),
+            depths.data_ptr<float>(),
+            normals.data_ptr<float>(),
+            primitives_ids.data_ptr<int32_t>(),
+            triangles_gpu,
+            stream);
+#endif
     }
 
 private:
-    RayCastingState m_state = {};
-    TriangleMesh m_mesh       = {};
+#ifdef ENABLE_OPTIX
+    RayCastingState m_state  = {};
+    OptixTriangle* m_triangles = {};
+#else
+private:
+    std::shared_ptr<TriangleBvh> triangle_bvh;
+    Triangle* triangles_gpu = NULL;
+#endif
 };
 
 RayCaster* create_raycaster(const Tensor& vertices, const Tensor& faces) {
-    CHECK_INPUT(vertices);
-    CHECK_INPUT(faces);
-
     RayCaster* ray_caster = new RayCasterImpl{};
+#ifdef ENABLE_OPTIX
     // build geometry acceleration structure
     ray_caster->build_gas(vertices, faces);
     // build the shading pipeline
     ray_caster->build_pipeline();
+#else
+    // build the bounding volume hierarchy
+    ray_caster->build_bvh(vertices, faces);
+#endif
 
     return ray_caster;
 }
+
 }  // namespace prim3d

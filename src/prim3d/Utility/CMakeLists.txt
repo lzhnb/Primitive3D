@@ -1,7 +1,5 @@
 # Add executable and library
-set(SOURCES
-    temp.cpp
-)
+set(SOURCES ray_cast.cu)
 
 if(OptiX_FOUND OR OptiX_INCLUDE)
     add_library(optix_program OBJECT
@@ -40,7 +38,7 @@ if(OptiX_FOUND OR OptiX_INCLUDE)
         COMMENT "Converting PTX files to a C header"
     )
 
-    list(APPEND SOURCES ray_cast_optix.cu ${OPTIX_PTX_HEADER})
+    list(APPEND SOURCES ${OPTIX_PTX_HEADER})
 endif()
 
 add_library(Utility SHARED ${SOURCES})

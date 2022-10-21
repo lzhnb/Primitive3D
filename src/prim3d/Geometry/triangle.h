@@ -15,10 +15,10 @@ struct Triangle {
         n           = cross(v1v0, v2v0);
         float3 q    = cross(rov0, rd);
         float d     = 1.0f / dot(rd, n);
-        float u     = d * -dot(q, v2v0);
+        float u     = d * dot(-q, v2v0);
         float v     = d * dot(q, v1v0);
-        float t     = d * -dot(n, rov0);
-        if (u < 0.0f || u > 1.0f || v < 0.0f || (u + v) > 1.0f || t < 0.0f) {
+        float t     = d * dot(-n, rov0);
+        if (u < 0.0f || v < 0.0f || (u + v) > 1.0f || t < 0.0f) {
             t = 1e38f;  // No intersection
         }
         return t;
@@ -32,13 +32,15 @@ struct Triangle {
     PRIM_HOST_DEVICE float3 centroid() const { return (a + b + c) / 3.0f; }
 
     PRIM_HOST_DEVICE float centroid(int axis) const {
-        if (axis == 0) {
+        switch (axis)
+        {
+        case 0:
             return (a.x + b.x + c.x) / 3;
-        } else if (axis == 1) {
+        case 1:
             return (a.y + b.y + c.y) / 3;
-        } else if (axis == 2) {
+        case 2:
             return (a.z + b.z + c.z) / 3;
-        } else {
+        default:
             return (a.x + b.x + c.x) / 3;
         }
     }
@@ -50,6 +52,7 @@ struct Triangle {
     }
 
     float3 a, b, c;
+    int32_t idx;
 };
 
 /* TODO: complete the Mesh structure*/

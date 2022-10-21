@@ -38,9 +38,9 @@
 #define CONST_STATIC_INIT(...) = __VA_ARGS__
 #endif
 
+#include <math.h>
 #include <vector_functions.h>
 #include <vector_types.h>
-
 #if !defined(__CUDACC_RTC__)
 #include <cmath>
 #include <cstdlib>
@@ -147,6 +147,12 @@ SUTIL_INLINE SUTIL_HOSTDEVICE float2 fmaxf(const float2& a, const float2& b) {
 SUTIL_INLINE SUTIL_HOSTDEVICE float fmaxf(const float2& a) { return fmaxf(a.x, a.y); }
 /** @} */
 
+/** max axis */
+SUTIL_INLINE SUTIL_HOSTDEVICE int32_t max_axis(const float2& a) { return (a.x > a.y) ? 0 : 1; }
+
+/** min axis */
+SUTIL_INLINE SUTIL_HOSTDEVICE int32_t min_axis(const float2& a) { return (a.x > a.y) ? 1 : 0; }
+
 /** add
  * @{
  */
@@ -252,6 +258,11 @@ SUTIL_INLINE SUTIL_HOSTDEVICE float2 clamp(const float2& v, const float2& a, con
 }
 /** @} */
 
+/** abs */
+SUTIL_INLINE SUTIL_HOSTDEVICE float2 abs(const float2& v) {
+    return make_float2(fabsf(v.x), fabsf(v.y));
+}
+
 /** dot product */
 SUTIL_INLINE SUTIL_HOSTDEVICE float dot(const float2& a, const float2& b) {
     return a.x * b.x + a.y * b.y;
@@ -260,9 +271,12 @@ SUTIL_INLINE SUTIL_HOSTDEVICE float dot(const float2& a, const float2& b) {
 /** length */
 SUTIL_INLINE SUTIL_HOSTDEVICE float length(const float2& v) { return sqrtf(dot(v, v)); }
 
+/** square norm */
+SUTIL_INLINE SUTIL_HOSTDEVICE float square_norm(const float2& v) { return dot(v, v); }
+
 /** normalize */
 SUTIL_INLINE SUTIL_HOSTDEVICE float2 normalize(const float2& v) {
-    float invLen = 1.0f / sqrtf(dot(v, v));
+    float invLen = 1.0f / sqrtf(square_norm(v));
     return v * invLen;
 }
 
@@ -336,6 +350,24 @@ SUTIL_INLINE SUTIL_HOSTDEVICE float3 fmaxf(const float3& a, const float3& b) {
 }
 SUTIL_INLINE SUTIL_HOSTDEVICE float fmaxf(const float3& a) { return fmaxf(fmaxf(a.x, a.y), a.z); }
 /** @} */
+
+/** max axis */
+SUTIL_INLINE SUTIL_HOSTDEVICE int32_t max_axis(const float3& a) {
+    float max_val = fmaxf(a);
+    if (a.x == max_val) { return 0; }
+    if (a.y == max_val) { return 1; }
+    if (a.z == max_val) { return 2; }
+    return 0;
+}
+
+/** min axis */
+SUTIL_INLINE SUTIL_HOSTDEVICE int32_t min_axis(const float3& a) {
+    float min_val = fminf(a);
+    if (a.x == min_val) { return 0; }
+    if (a.y == min_val) { return 1; }
+    if (a.z == min_val) { return 2; }
+    return 0;
+}
 
 /** add
  * @{
@@ -446,6 +478,11 @@ SUTIL_INLINE SUTIL_HOSTDEVICE float3 clamp(const float3& v, const float3& a, con
 }
 /** @} */
 
+/** abs */
+SUTIL_INLINE SUTIL_HOSTDEVICE float3 abs(const float3& v) {
+    return make_float3(fabsf(v.x), fabsf(v.y), fabsf(v.z));
+}
+
 /** dot product */
 SUTIL_INLINE SUTIL_HOSTDEVICE float dot(const float3& a, const float3& b) {
     return a.x * b.x + a.y * b.y + a.z * b.z;
@@ -459,9 +496,12 @@ SUTIL_INLINE SUTIL_HOSTDEVICE float3 cross(const float3& a, const float3& b) {
 /** length */
 SUTIL_INLINE SUTIL_HOSTDEVICE float length(const float3& v) { return sqrtf(dot(v, v)); }
 
+/** square norm */
+SUTIL_INLINE SUTIL_HOSTDEVICE float square_norm(const float3& v) { return dot(v, v); }
+
 /** normalize */
 SUTIL_INLINE SUTIL_HOSTDEVICE float3 normalize(const float3& v) {
-    float invLen = 1.0f / sqrtf(dot(v, v));
+    float invLen = 1.0f / sqrtf(square_norm(v));
     return v * invLen;
 }
 
@@ -539,6 +579,26 @@ SUTIL_INLINE SUTIL_HOSTDEVICE float fmaxf(const float4& a) {
     return fmaxf(fmaxf(a.x, a.y), fmaxf(a.z, a.w));
 }
 /** @} */
+
+/** max axis */
+SUTIL_INLINE SUTIL_HOSTDEVICE int32_t max_axis(const float4& a) {
+    float max_val = fmaxf(a);
+    if (a.x == max_val) { return 0; }
+    if (a.y == max_val) { return 1; }
+    if (a.z == max_val) { return 2; }
+    if (a.w == max_val) { return 3; }
+    return 0;
+}
+
+/** min axis */
+SUTIL_INLINE SUTIL_HOSTDEVICE int32_t min_axis(const float4& a) {
+    float min_val = fminf(a);
+    if (a.x == min_val) { return 0; }
+    if (a.y == min_val) { return 1; }
+    if (a.z == min_val) { return 2; }
+    if (a.w == min_val) { return 3; }
+    return 0;
+}
 
 /** add
  * @{
@@ -654,6 +714,11 @@ SUTIL_INLINE SUTIL_HOSTDEVICE float4 clamp(const float4& v, const float4& a, con
 }
 /** @} */
 
+/** abs */
+SUTIL_INLINE SUTIL_HOSTDEVICE float4 abs(const float4& v) {
+    return make_float4(fabsf(v.x), fabsf(v.y), fabsf(v.z), fabsf(v.w));
+}
+
 /** dot product */
 SUTIL_INLINE SUTIL_HOSTDEVICE float dot(const float4& a, const float4& b) {
     return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
@@ -662,9 +727,12 @@ SUTIL_INLINE SUTIL_HOSTDEVICE float dot(const float4& a, const float4& b) {
 /** length */
 SUTIL_INLINE SUTIL_HOSTDEVICE float length(const float4& r) { return sqrtf(dot(r, r)); }
 
+/** square norm */
+SUTIL_INLINE SUTIL_HOSTDEVICE float square_norm(const float4& v) { return dot(v, v); }
+
 /** normalize */
 SUTIL_INLINE SUTIL_HOSTDEVICE float4 normalize(const float4& v) {
-    float invLen = 1.0f / sqrtf(dot(v, v));
+    float invLen = 1.0f / sqrtf(square_norm(v));
     return v * invLen;
 }
 
@@ -796,6 +864,9 @@ SUTIL_INLINE SUTIL_HOSTDEVICE int2 clamp(const int2& v, const int2& a, const int
 }
 /** @} */
 
+/** abs */
+SUTIL_INLINE SUTIL_HOSTDEVICE int2 abs(const int2& v) { return make_int2(abs(v.x), abs(v.y)); }
+
 /** equality
  * @{
  */
@@ -915,6 +986,11 @@ SUTIL_INLINE SUTIL_HOSTDEVICE int3 clamp(const int3& v, const int3& a, const int
     return make_int3(clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z));
 }
 /** @} */
+
+/** abs */
+SUTIL_INLINE SUTIL_HOSTDEVICE int3 abs(const int3& v) {
+    return make_int3(abs(v.x), abs(v.y), abs(v.z));
+}
 
 /** equality
  * @{
@@ -1042,6 +1118,11 @@ SUTIL_INLINE SUTIL_HOSTDEVICE int4 clamp(const int4& v, const int4& a, const int
         clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z), clamp(v.w, a.w, b.w));
 }
 /** @} */
+
+/** abs */
+SUTIL_INLINE SUTIL_HOSTDEVICE int4 abs(const int4& v) {
+    return make_int4(abs(v.x), abs(v.y), abs(v.z), abs(v.w));
+}
 
 /** equality
  * @{
@@ -1550,6 +1631,11 @@ clamp(const longlong2& v, const longlong2& a, const longlong2& b) {
 }
 /** @} */
 
+/** abs */
+SUTIL_INLINE SUTIL_HOSTDEVICE longlong2 abs(const longlong2& v) {
+    return make_longlong2(llabs(v.x), llabs(v.y));
+}
+
 /** equality
  * @{
  */
@@ -1679,6 +1765,11 @@ clamp(const longlong3& v, const longlong3& a, const longlong3& b) {
     return make_longlong3(clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z));
 }
 /** @} */
+
+/** abs */
+SUTIL_INLINE SUTIL_HOSTDEVICE longlong3 abs(const longlong3& v) {
+    return make_longlong3(llabs(v.x), llabs(v.y), llabs(v.z));
+}
 
 /** equality
  * @{
@@ -1815,6 +1906,11 @@ clamp(const longlong4& v, const longlong4& a, const longlong4& b) {
 }
 /** @} */
 
+/** abs */
+SUTIL_INLINE SUTIL_HOSTDEVICE longlong4 abs(const longlong4& v) {
+    return make_longlong4(llabs(v.x), llabs(v.y), llabs(v.z), llabs(v.w));
+}
+
 /** equality
  * @{
  */
@@ -1941,6 +2037,11 @@ clamp(const ulonglong2& v, const ulonglong2& a, const ulonglong2& b) {
     return make_ulonglong2(clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y));
 }
 /** @} */
+
+/** abs */
+SUTIL_INLINE SUTIL_HOSTDEVICE ulonglong2 abs(const ulonglong2& v) {
+    return make_ulonglong2(llabs(v.x), llabs(v.y));
+}
 
 /** equality
  * @{
@@ -2071,6 +2172,11 @@ clamp(const ulonglong3& v, const ulonglong3& a, const ulonglong3& b) {
     return make_ulonglong3(clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z));
 }
 /** @} */
+
+/** abs */
+SUTIL_INLINE SUTIL_HOSTDEVICE ulonglong3 abs(const ulonglong3& v) {
+    return make_ulonglong3(llabs(v.x), llabs(v.y), llabs(v.z));
+}
 
 /** equality
  * @{
@@ -2217,6 +2323,11 @@ clamp(const ulonglong4& v, const ulonglong4& a, const ulonglong4& b) {
         clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z), clamp(v.w, a.w, b.w));
 }
 /** @} */
+
+/** abs */
+SUTIL_INLINE SUTIL_HOSTDEVICE ulonglong4 abs(const ulonglong4& v) {
+    return make_ulonglong4(llabs(v.x), llabs(v.y), llabs(v.z), llabs(v.w));
+}
 
 /** equality
  * @{

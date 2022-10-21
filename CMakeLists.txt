@@ -28,9 +28,7 @@ if(OptiX_FOUND OR OptiX_INCLUDE)
 	# compile nvidia support libraries
 	add_definitions(-DENABLE_OPTIX)
 else()
-	message(WARNING
-		"OptiX was not found."
-	)
+	message(WARNING "OptiX was not found.")
 endif()
 
 # torch extension

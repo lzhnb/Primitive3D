@@ -1,5 +1,6 @@
 // Copyright 2022 Zhihao Liang
 #include <optix.h>
+
 #include "launch_parameters.h"
 
 namespace prim3d {
@@ -48,9 +49,7 @@ extern "C" __global__ void __raygen__rg() {
 
     // If a triangle was hit, prim_idx is its index, otherwise prim_idx is -1.
     // Write out the triangle's normal if it (abuse the direction buffer).
-    if ((int32_t)prim_idx == -1) {
-        return;
-    }
+    if ((int32_t)prim_idx == -1) { return; }
     params.output_primitive_ids[ray_id]   = (int32_t)prim_idx;
     params.output_normals[ray_id * 3 + 0] = int_as_float(nx);
     params.output_normals[ray_id * 3 + 1] = int_as_float(ny);
@@ -61,7 +60,7 @@ extern "C" __global__ void __raygen__rg() {
 extern "C" __global__ void __miss__ms() {
     optixSetPayload_0((uint32_t)-1);
     optixSetPayload_1(float_as_int(optixGetRayTmax()));
-    optixSetPayload_2(float_as_int(1.0f));
+    optixSetPayload_2(float_as_int(0.0f));
     optixSetPayload_3(float_as_int(0.0f));
     optixSetPayload_4(float_as_int(0.0f));
 }
@@ -70,8 +69,8 @@ extern "C" __global__ void __miss__ms() {
 extern "C" __global__ void __closesthit__ch() {
     const RayCast::HitGroupData& sbt_data = *(RayCast::HitGroupData*)optixGetSbtDataPointer();
     const int32_t prim_idx                = (int32_t)optixGetPrimitiveIndex();
-    const TriangleMesh mesh               = (TriangleMesh)(sbt_data.data);
-    const Triangle hit_triangle           = mesh.triangles[prim_idx];
+    const OptixTriangle* triangles        = (OptixTriangle*)(sbt_data.data);
+    const OptixTriangle hit_triangle      = triangles[prim_idx];
     const float3 n                        = hit_triangle.normal();
 
     optixSetPayload_0(prim_idx);
