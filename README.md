@@ -4,11 +4,12 @@ Primitive3D: Self-Pratice Library for pytorch-based 3D Data Processing.
 
 # Installation
 ```sh
-export OptiX_INSTALL_DIR=$OptiX_INSTALL_DIR
+export OptiX_INSTALL_DIR=$OptiX_INSTALL_DIR # (optional)
 python setup.py develop
 ```
 
 ## Examples
+
 - Ray Casting
 ```python
 import torch
@@ -32,10 +33,18 @@ primitive_ids: torch.Tensor
 ray_caster.invoke(origins, dirs, depths, normals, primitive_ids)
 ```
 
+- Marching Cubes
+```sh
+# toy examples from the PyMCubes
+python examples/sphere.py
+# we extract the sdf of bunny via `mesh_to_sdf`
+python examples/bunny_sdf.py
+```
+
 ## TODO
 - [x] RayCasting based on Optix or CUDA BVH
 - [ ] SDF From Mesh
-- [ ] Marching Cubes
+- [x] Marching Cubes(Mitigate from [CuMCubes](https://github.com/lzhnb/CuMCubes))
 - [ ] Documents
 
 
