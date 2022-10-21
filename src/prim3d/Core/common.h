@@ -15,8 +15,10 @@
 
 #ifdef __NVCC__
 #define PRIM_HOST_DEVICE __host__ __device__
+#define PRIM_DEVICE __device__
 #else
 #define PRIM_HOST_DEVICE
+#define PRIM_DEVICE
 #endif
 
 //////////////////////////////////////

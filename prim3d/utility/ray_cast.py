@@ -1,9 +1,7 @@
 # Copyright (c) Zhihao Liang. All rights reserved.
-from typing import Any
-
+import prim3d.libPrim3D as _C
 import torch
 
-import prim3d.libPrim3D as _C
 
 def create_raycaster(
     vertices: torch.Tensor,

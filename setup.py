@@ -46,7 +46,6 @@ class CMakeBuild(build_ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = [
             f"-DCMAKE_PREFIX_PATH={torch.utils.cmake_prefix_path}",
-            f"-DPYBIND11_PYTHON_VERSION={PYTHON_VERSION}",
             f"-DPYTHON_INCLUDE_DIR={get_paths()['include']}",
             f'-DCMAKE_CUDA_FLAGS="--expt-relaxed-constexpr"',
         ]

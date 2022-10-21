@@ -1,5 +1,6 @@
 # Add executable and library
-set(SOURCES ray_cast.cu)
+# set(SRC_FILES ray_cast.cu)
+file(GLOB SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/*.c ${CMAKE_CURRENT_SOURCE_DIR}/*.cu)
 
 if(OptiX_FOUND OR OptiX_INCLUDE)
     add_library(optix_program OBJECT
@@ -38,10 +39,10 @@ if(OptiX_FOUND OR OptiX_INCLUDE)
         COMMENT "Converting PTX files to a C header"
     )
 
-    list(APPEND SOURCES ${OPTIX_PTX_HEADER})
+    list(APPEND SRC_FILES ${OPTIX_PTX_HEADER})
 endif()
 
-add_library(Utility SHARED ${SOURCES})
+add_library(Utility SHARED ${SRC_FILES})
 add_library(Prim3D::Utility ALIAS Utility)
 set_target_properties(Utility PROPERTIES OUTPUT_NAME "Prim3D-Utility")
 
