@@ -10,6 +10,14 @@ namespace py = pybind11;
 // TODO: decouple the pybind11 module
 namespace prim3d {
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+    m.doc() = "Primitive3D: Self-Pratice Library for pytorch-based 3D Data Processing.";
+
+#ifdef ENABLE_OPTIX
+    m.attr("enable_optix") = true;
+#else
+    m.attr("enable_optix") = false;
+#endif
+
     m.def("test", &test);
 
     py::class_<RayCaster>(m, "RayCaster").def("invoke", &RayCaster::invoke);

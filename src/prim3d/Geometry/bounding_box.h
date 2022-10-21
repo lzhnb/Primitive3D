@@ -103,29 +103,21 @@ struct BoundingBox {
 
         for (int i = 0; i < 3; i++) {
             project<3>(triangle_verts, box_normals[i], triangle_min, triangle_max);
+            // No intersection possible.
             switch (i) {
                 case 0:
-                    if (triangle_max < min.x || triangle_min > max.x) {
-                        return false;  // No intersection possible.
-                    }
+                    if (triangle_max < min.x || triangle_min > max.x) { return false; }
                     break;
                 case 1:
-                    if (triangle_max < min.y || triangle_min > max.y) {
-                        return false;  // No intersection possible.
-                    }
+                    if (triangle_max < min.y || triangle_min > max.y) { return false; }
                     break;
                 case 2:
-                    if (triangle_max < min.z || triangle_min > max.z) {
-                        return false;  // No intersection possible.
-                    }
+                    if (triangle_max < min.z || triangle_min > max.z) { return false; }
                     break;
 
                 default:
                     break;
             }
-            // if (triangle_max < min[i] || triangle_min > max[i]) {
-            //     return false;  // No intersection possible.
-            // }
         }
 
         float3 verts[8];

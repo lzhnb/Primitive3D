@@ -1,5 +1,5 @@
 # Add executable and library
-set(SOURCES ray_cast_optix.cu)
+set(SOURCES ray_cast.cu)
 
 if(OptiX_FOUND OR OptiX_INCLUDE)
     add_library(optix_program OBJECT

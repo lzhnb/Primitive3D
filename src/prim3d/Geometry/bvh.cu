@@ -222,6 +222,7 @@ public:
         std::stack<BuildNode> build_stack;
         build_stack.push({0, std::begin(triangles), std::end(triangles)});
 
+        // cpu bvh construction
         while (!build_stack.empty()) {
             const BuildNode& curr = build_stack.top();
             size_t node_idx       = curr.node_idx;
@@ -236,7 +237,7 @@ public:
             int n_children = 1;
             while (n_children < BRANCHING_FACTOR) {
                 for (int i = n_children - 1; i >= 0; --i) {
-                    auto& child = children[i];
+                    const BuildNode& child = children[i];
 
                     // Choose axis with maximum standard deviation
                     float3 mean = make_float3(0.0f);
@@ -254,7 +255,7 @@ public:
 
                     const int32_t axis = max_axis(var);
 
-                    auto m = child.begin + std::distance(child.begin, child.end) / 2;
+                    std::vector<Triangle>::iterator m = child.begin + std::distance(child.begin, child.end) / 2;
                     std::nth_element(
                         child.begin, m, child.end, [&](const Triangle& tri1, const Triangle& tri2) {
                             return tri1.centroid(axis) < tri2.centroid(axis);
@@ -271,7 +272,7 @@ public:
             // Create next build nodes
             m_nodes[node_idx].left_idx = (int)m_nodes.size();
             for (uint32_t i = 0; i < BRANCHING_FACTOR; ++i) {
-                auto& child = children[i];
+                BuildNode& child = children[i];
                 assert(child.begin != child.end);
                 child.node_idx = (int)m_nodes.size();
 
@@ -290,6 +291,7 @@ public:
             m_nodes[node_idx].right_idx = (int)m_nodes.size();
         }
 
+        // Put the bvh on gpu
         CUDA_CHECK(cudaMalloc((void**)&m_nodes_gpu, sizeof(TriangleBvhNode) * m_nodes.size()));
         CUDA_CHECK(cudaMemcpy(
             m_nodes_gpu,

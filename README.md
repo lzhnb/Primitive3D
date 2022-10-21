@@ -17,7 +17,7 @@ import prim3d
 vertices: torch.Tensor # input vertices
 faces: torch.Tensor # input faces
 # create the ray caster
-ray_caster = prim3d._C.create_raycaster(vertices, faces)
+ray_caster = prim3d.create_raycaster(vertices, faces)
 
 # setting ray origins and directions
 origins: torch.Tensor
@@ -33,7 +33,7 @@ ray_caster.invoke(origins, dirs, depths, normals, primitive_ids)
 ```
 
 ## TODO
-- [x] OptiX RayCasting
+- [x] RayCasting based on Optix or CUDA BVH
 - [ ] SDF From Mesh
 - [ ] Marching Cubes
 - [ ] Documents
