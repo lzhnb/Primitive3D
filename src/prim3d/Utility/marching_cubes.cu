@@ -1,41 +1,45 @@
 // Copyright 2022 Zhihao Liang
 #include "marching_cubes.h"
 
-// Kernels
 __global__ void count_vertices_faces_kernel(
-    const torch::PackedTensorAccessor32<float, 3, torch::RestrictPtrTraits> density_grid,
+    const float* __restrict__ density_grid,
     const float thresh,
+    const int32_t res_x,
+    const int32_t res_y,
+    const int32_t res_z,
     // output
     int32_t* __restrict__ counters) {
     const int32_t x = blockIdx.x * blockDim.x + threadIdx.x;
     const int32_t y = blockIdx.y * blockDim.y + threadIdx.y;
     const int32_t z = blockIdx.z * blockDim.z + threadIdx.z;
 
-    const int32_t res_x = density_grid.size(0), res_y = density_grid.size(1),
-                  res_z = density_grid.size(2);
-    // const int32_t res_x = resolution[0], res_y = resolution[1], res_z = resolution[2];
     if (x >= res_x || y >= res_y || z >= res_z) { return; }
 
+    // define the query function
+    auto query_density = [=] __device__ (int32_t i, int32_t j, int32_t k){
+        return density_grid[i * res_y * res_z + j * res_z + k];
+	};
+
     // traverse throught x-y-z axis
-    const float density_self = density_grid[x][y][z];
+    const float density_self = query_density(x, y, z);
     const bool inside        = density_self > thresh;
 
-    // ** vertices
+    // write vertices
     // x-axis
     if (x < res_x - 1) {
-        const float density_x_next = density_grid[x + 1][y][z];
+        const float density_x_next = query_density(x + 1, y, z);
         const bool inside_x_next   = (density_x_next > thresh);
         if (inside != inside_x_next) { atomicAdd(counters, 1); }
     }
     // y-axis
     if (y < res_y - 1) {
-        const float density_y_next = density_grid[x][y + 1][z];
+        const float density_y_next = query_density(x, y + 1, z);
         const bool inside_y_next   = (density_y_next > thresh);
         if (inside != inside_y_next) { atomicAdd(counters, 1); }
     }
     // z-axis
     if (z < res_z - 1) {
-        const float density_z_next = density_grid[x][y][z + 1];
+        const float density_z_next = query_density(x, y, z + 1);
         const bool inside_z_next   = (density_z_next > thresh);
         if (inside != inside_z_next) { atomicAdd(counters, 1); }
     }
@@ -43,14 +47,14 @@ __global__ void count_vertices_faces_kernel(
     // ** faces
     if (x < res_x - 1 && y < res_y - 1 && z < res_z - 1) {
         uint8_t mask = 0;
-        if (density_grid[x][y][z] > thresh) { mask |= 1; }
-        if (density_grid[x + 1][y][z] > thresh) { mask |= 2; }
-        if (density_grid[x + 1][y + 1][z] > thresh) { mask |= 4; }
-        if (density_grid[x][y + 1][z] > thresh) { mask |= 8; }
-        if (density_grid[x][y][z + 1] > thresh) { mask |= 16; }
-        if (density_grid[x + 1][y][z + 1] > thresh) { mask |= 32; }
-        if (density_grid[x + 1][y + 1][z + 1] > thresh) { mask |= 64; }
-        if (density_grid[x][y + 1][z + 1] > thresh) { mask |= 128; }
+        if (query_density(x, y, z) > thresh) { mask |= 1; }
+        if (query_density(x + 1, y, z) > thresh) { mask |= 2; }
+        if (query_density(x + 1, y + 1, z) > thresh) { mask |= 4; }
+        if (query_density(x, y + 1, z) > thresh) { mask |= 8; }
+        if (query_density(x, y, z + 1) > thresh) { mask |= 16; }
+        if (query_density(x + 1, y, z + 1) > thresh) { mask |= 32; }
+        if (query_density(x + 1, y + 1, z + 1) > thresh) { mask |= 64; }
+        if (query_density(x, y + 1, z + 1) > thresh) { mask |= 128; }
 
         // if (!mask || mask == 255) { return; }
 
@@ -64,70 +68,80 @@ __global__ void count_vertices_faces_kernel(
 }
 
 __global__ void gen_vertices_kernel(
-    const torch::PackedTensorAccessor32<float, 3, torch::RestrictPtrTraits> density_grid,
+    // const torch::PackedTensorAccessor32<float, 3, torch::RestrictPtrTraits> density_grid,
+    const float* __restrict__ density_grid,
     const float thresh,
+    const int32_t res_x,
+    const int32_t res_y,
+    const int32_t res_z,
     // output
     torch::PackedTensorAccessor32<int32_t, 4, torch::RestrictPtrTraits> vertex_grid,
-    torch::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> vertices,
+    float* __restrict__ vertices,
     int32_t* __restrict__ counters) {
     const int32_t x = blockIdx.x * blockDim.x + threadIdx.x;
     const int32_t y = blockIdx.y * blockDim.y + threadIdx.y;
     const int32_t z = blockIdx.z * blockDim.z + threadIdx.z;
 
-    const int32_t res_x = density_grid.size(0), res_y = density_grid.size(1),
-                  res_z = density_grid.size(2);
     // const int32_t res_x = resolution[0], res_y = resolution[1], res_z = resolution[2];
     if (x >= res_x || y >= res_y || z >= res_z) { return; }
 
+    // define the query function
+    auto query_density = [=] __device__ (int32_t i, int32_t j, int32_t k){
+        return density_grid[i * res_y * res_z + j * res_z + k];
+	};
+
     // traverse throught x-y-z axis
-    const float density_self = density_grid[x][y][z];
+    const float density_self = query_density(x, y, z);
     const bool inside        = density_self > thresh;
 
     // ** vertices
     // x-axis
     if (x < res_x - 1) {
-        const float density_x_next = density_grid[x + 1][y][z];
+        const float density_x_next = query_density(x + 1, y, z);
         const bool inside_x_next   = (density_x_next > thresh);
         if (inside != inside_x_next) {
             int32_t vidx            = atomicAdd(counters, 1);
             const float dt          = (thresh - density_self) / (density_x_next - density_self);
             vertex_grid[x][y][z][0] = vidx + 1;
-            vertices[vidx][0]       = static_cast<float>(x) + dt;
-            vertices[vidx][1]       = static_cast<float>(y);
-            vertices[vidx][2]       = static_cast<float>(z);
+            vertices[vidx * 3 + 0]       = static_cast<float>(x) + dt;
+            vertices[vidx * 3 + 1]       = static_cast<float>(y);
+            vertices[vidx * 3 + 2]       = static_cast<float>(z);
         }
     }
     // y-axis
     if (y < res_y - 1) {
-        const float density_y_next = density_grid[x][y + 1][z];
+        const float density_y_next = query_density(x, y + 1, z);
         const bool inside_y_next   = (density_y_next > thresh);
         if (inside != inside_y_next) {
             int32_t vidx            = atomicAdd(counters, 1);
             const float dt          = (thresh - density_self) / (density_y_next - density_self);
             vertex_grid[x][y][z][1] = vidx + 1;
-            vertices[vidx][0]       = static_cast<float>(x);
-            vertices[vidx][1]       = static_cast<float>(y) + dt;
-            vertices[vidx][2]       = static_cast<float>(z);
+            vertices[vidx * 3 + 0]       = static_cast<float>(x);
+            vertices[vidx * 3 + 1]       = static_cast<float>(y) + dt;
+            vertices[vidx * 3 + 2]       = static_cast<float>(z);
         }
     }
     // z-axis
     if (z < res_z - 1) {
-        const float density_z_next = density_grid[x][y][z + 1];
+        const float density_z_next = query_density(x, y, z + 1);
         const bool inside_z_next   = (density_z_next > thresh);
         if (inside != inside_z_next) {
             int32_t vidx            = atomicAdd(counters, 1);
             const float dt          = (thresh - density_self) / (density_z_next - density_self);
             vertex_grid[x][y][z][2] = vidx + 1;
-            vertices[vidx][0]       = static_cast<float>(x);
-            vertices[vidx][1]       = static_cast<float>(y);
-            vertices[vidx][2]       = static_cast<float>(z) + dt;
+            vertices[vidx * 3 + 0]       = static_cast<float>(x);
+            vertices[vidx * 3 + 1]       = static_cast<float>(y);
+            vertices[vidx * 3 + 2]       = static_cast<float>(z) + dt;
         }
     }
 }
 
 __global__ void gen_faces_kernel(
-    const torch::PackedTensorAccessor32<float, 3, torch::RestrictPtrTraits> density_grid,
+    const float* __restrict__ density_grid,
     const float thresh,
+    const int32_t res_x,
+    const int32_t res_y,
+    const int32_t res_z,
     // output
     torch::PackedTensorAccessor32<int32_t, 4, torch::RestrictPtrTraits> vertex_grid,
     int32_t* __restrict__ faces,
@@ -136,23 +150,26 @@ __global__ void gen_faces_kernel(
     const int32_t y = blockIdx.y * blockDim.y + threadIdx.y;
     const int32_t z = blockIdx.z * blockDim.z + threadIdx.z;
 
-    const int32_t res_x = density_grid.size(0), res_y = density_grid.size(1),
-                  res_z = density_grid.size(2);
     if (x >= res_x - 1 || y >= res_y - 1 || z >= res_z - 1) { return; }
 
+    // define the query function
+    auto query_density = [=] __device__ (int32_t i, int32_t j, int32_t k){
+        return density_grid[i * res_y * res_z + j * res_z + k];
+	};
+
     // traverse throught x-y-z axis
-    const float density_self = density_grid[x][y][z];
+    const float density_self = query_density(x, y, z);
     const bool inside        = density_self > thresh;
 
     uint8_t mask = 0;
-    if (density_grid[x][y][z] > thresh) { mask |= 1; }
-    if (density_grid[x + 1][y][z] > thresh) { mask |= 2; }
-    if (density_grid[x + 1][y + 1][z] > thresh) { mask |= 4; }
-    if (density_grid[x][y + 1][z] > thresh) { mask |= 8; }
-    if (density_grid[x][y][z + 1] > thresh) { mask |= 16; }
-    if (density_grid[x + 1][y][z + 1] > thresh) { mask |= 32; }
-    if (density_grid[x + 1][y + 1][z + 1] > thresh) { mask |= 64; }
-    if (density_grid[x][y + 1][z + 1] > thresh) { mask |= 128; }
+    if (query_density(x, y, z) > thresh) { mask |= 1; }
+    if (query_density(x + 1, y, z) > thresh) { mask |= 2; }
+    if (query_density(x + 1, y + 1, z) > thresh) { mask |= 4; }
+    if (query_density(x, y + 1, z) > thresh) { mask |= 8; }
+    if (query_density(x, y, z + 1) > thresh) { mask |= 16; }
+    if (query_density(x + 1, y, z + 1) > thresh) { mask |= 32; }
+    if (query_density(x + 1, y + 1, z + 1) > thresh) { mask |= 64; }
+    if (query_density(x, y + 1, z + 1) > thresh) { mask |= 128; }
 
     int32_t local_edges[12];
     local_edges[0] = vertex_grid[x][y][z][0];
@@ -219,8 +236,11 @@ vector<Tensor> marching_cubes(
 
     // count only
     count_vertices_faces_kernel<<<blocks, threads>>>(
-        density_grid.packed_accessor32<float, 3, torch::RestrictPtrTraits>(),
+        density_grid.data_ptr<float>(),
         thresh,
+        resolution[0],
+        resolution[1],
+        resolution[2],
         // output
         counters.data_ptr<int32_t>());
 
@@ -240,17 +260,23 @@ vector<Tensor> marching_cubes(
 
     // generate vertices
     gen_vertices_kernel<<<blocks, threads>>>(
-        density_grid.packed_accessor32<float, 3, torch::RestrictPtrTraits>(),
+        density_grid.data_ptr<float>(),
         thresh,
+        resolution[0],
+        resolution[1],
+        resolution[2],
         // output
         vertex_grid.packed_accessor32<int32_t, 4, torch::RestrictPtrTraits>(),
-        vertices.packed_accessor32<float, 2, torch::RestrictPtrTraits>(),
+        vertices.data_ptr<float>(),
         counters.data_ptr<int32_t>() + 2);
 
     // generate faces
     gen_faces_kernel<<<blocks, threads>>>(
-        density_grid.packed_accessor32<float, 3, torch::RestrictPtrTraits>(),
+        density_grid.data_ptr<float>(),
         thresh,
+        resolution[0],
+        resolution[1],
+        resolution[2],
         // output
         vertex_grid.packed_accessor32<int32_t, 4, torch::RestrictPtrTraits>(),
         faces.data_ptr<int32_t>(),

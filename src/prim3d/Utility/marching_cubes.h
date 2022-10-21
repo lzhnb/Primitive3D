@@ -21,7 +21,7 @@ void save_mesh_as_ply(const std::string filename, Tensor vertices, Tensor faces,
 }  // namespace prim3d
 
 // Triangle table for marching cubes
-static PRIM_HOST_DEVICE int8_t triangle_table[256][16] = {
+static PRIM_DEVICE int8_t triangle_table[256][16] = {
     {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
