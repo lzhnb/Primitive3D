@@ -43,8 +43,9 @@ python examples/bunny_sdf.py
 
 ## TODO
 - [x] RayCasting based on Optix or CUDA BVH
-- [ ] SDF From Mesh
 - [x] Marching Cubes(Mitigate from [CuMCubes](https://github.com/lzhnb/CuMCubes))
+- [ ] Add RayCasting Examples
+- [ ] SDF From Mesh
 - [ ] Documents
 
 
