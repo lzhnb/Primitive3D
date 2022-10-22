@@ -145,8 +145,8 @@ template <uint32_t BRANCHING_FACTOR>
 class TriangleBvhWithBranchingFactor : public TriangleBvh {
 public:
     PRIM_HOST_DEVICE static std::pair<int, float> ray_intersect(
-        float3 ro,
-        float3 rd,
+        const Vector3f ro,
+        const Vector3f rd,
         const TriangleBvhNode* __restrict__ bvhnodes,
         const Triangle* __restrict__ triangles) {
         FixedIntStack query_stack;
@@ -177,7 +177,7 @@ public:
 #pragma unroll
                 for (uint32_t i = 0; i < BRANCHING_FACTOR; ++i) {
                     children[i] = {
-                        bvhnodes[i + first_child].bb.ray_intersect(ro, rd).x, i + first_child};
+                        bvhnodes[i + first_child].bb.ray_intersect(ro, rd).x(), i + first_child};
                 }
 
                 sorting_network<BRANCHING_FACTOR>(children);
@@ -240,22 +240,21 @@ public:
                     const BuildNode& child = children[i];
 
                     // Choose axis with maximum standard deviation
-                    float3 mean = make_float3(0.0f);
-                    for (auto it = child.begin; it != child.end; ++it) {
-                        mean = mean + it->centroid();
-                    }
+                    Vector3f mean = Vector3f::Zero();
+                    for (auto it = child.begin; it != child.end; ++it) { mean += it->centroid(); }
                     mean /= (float)std::distance(child.begin, child.end);
 
-                    float3 var = make_float3(0.0f);
+                    Vector3f var = Vector3f::Zero();
                     for (auto it = child.begin; it != child.end; ++it) {
-                        float3 diff = it->centroid() - mean;
-                        var         = var + square_norm(diff);
+                        Vector3f diff = it->centroid() - mean;
+                        var += diff.cwiseProduct(diff);
                     }
                     var /= (float)std::distance(child.begin, child.end);
 
-                    const int32_t axis = max_axis(var);
+                    Vector3f::Index axis;
+                    var.maxCoeff(&axis);
 
-                    std::vector<Triangle>::iterator m = child.begin + std::distance(child.begin, child.end) / 2;
+                    auto m = child.begin + std::distance(child.begin, child.end) / 2;
                     std::nth_element(
                         child.begin, m, child.end, [&](const Triangle& tri1, const Triangle& tri2) {
                             return tri1.centroid(axis) < tri2.centroid(axis);
@@ -272,7 +271,7 @@ public:
             // Create next build nodes
             m_nodes[node_idx].left_idx = (int)m_nodes.size();
             for (uint32_t i = 0; i < BRANCHING_FACTOR; ++i) {
-                BuildNode& child = children[i];
+                auto& child = children[i];
                 assert(child.begin != child.end);
                 child.node_idx = (int)m_nodes.size();
 
@@ -321,8 +320,10 @@ __global__ void raytrace_kernel(
     uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= n_elements) return;
 
-    float3 ro = make_float3(rays_o[i * 3 + 0], rays_o[i * 3 + 1], rays_o[i * 3 + 2]);
-    float3 rd = make_float3(rays_d[i * 3 + 0], rays_d[i * 3 + 1], rays_d[i * 3 + 2]);
+    const Vector3f* ro_vector = (const Vector3f*)rays_o;
+    const Vector3f* rd_vector = (const Vector3f*)rays_d;
+    const Vector3f ro         = ro_vector[i];
+    const Vector3f rd         = rd_vector[i];
 
     auto p = TriangleBvh4::ray_intersect(ro, rd, nodes, triangles);
 
@@ -331,11 +332,11 @@ __global__ void raytrace_kernel(
 
     // face normal is written to directions.
     if (p.first >= 0) {
-        const float3 normal = triangles[p.first].normal();
-        normals[i * 3 + 0]  = normal.x;
-        normals[i * 3 + 1]  = normal.y;
-        normals[i * 3 + 2]  = normal.z;
-        face_id[i]          = triangles[p.first].idx;
+        const Vector3f normal = triangles[p.first].normal();
+        normals[i * 3 + 0]    = normal.x();
+        normals[i * 3 + 1]    = normal.y();
+        normals[i * 3 + 2]    = normal.z();
+        face_id[i]            = triangles[p.first].idx;
     } else {
         normals[i * 3 + 0] = 0.0f;
         normals[i * 3 + 1] = 0.0f;

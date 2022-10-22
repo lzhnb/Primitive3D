@@ -6,13 +6,17 @@
 #include <optix_function_table_definition.h>
 #include <optix_stack_size.h>
 
+#include <Eigen/Dense>
+
+using Eigen::Vector3f;
+
 namespace prim3d {
 
 // NOTE: OptixTriangle just contain a,b,c (for the trianglearray)
 struct OptixTriangle {
-    SUTIL_HOSTDEVICE float3 normal() const { return normalize(cross(b - a, c - a)); }
+    SUTIL_HOSTDEVICE Vector3f normal() const { return (b - a).cross(c - a).normalized(); }
 
-    float3 a, b, c;
+    Vector3f a, b, c;
 };
 
 struct RayCast {
