@@ -1,0 +1,3 @@
+[submodule "third_party/eigen"]
+	path = third_party/eigen
+	url = git@github.com:Tom94/eigen.git

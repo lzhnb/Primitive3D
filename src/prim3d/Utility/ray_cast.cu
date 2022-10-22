@@ -26,15 +26,12 @@ __global__ void vertices_faces_to_triangles(
     const int32_t p3 = faces_ptr[triangle_id * 3 + 2];
 
     // fullfill the points
-    triangles_ptr[triangle_id].a.x = vertices_ptr[p1 * 3 + 0];
-    triangles_ptr[triangle_id].a.y = vertices_ptr[p1 * 3 + 1];
-    triangles_ptr[triangle_id].a.z = vertices_ptr[p1 * 3 + 2];
-    triangles_ptr[triangle_id].b.x = vertices_ptr[p2 * 3 + 0];
-    triangles_ptr[triangle_id].b.y = vertices_ptr[p2 * 3 + 1];
-    triangles_ptr[triangle_id].b.z = vertices_ptr[p2 * 3 + 2];
-    triangles_ptr[triangle_id].c.x = vertices_ptr[p3 * 3 + 0];
-    triangles_ptr[triangle_id].c.y = vertices_ptr[p3 * 3 + 1];
-    triangles_ptr[triangle_id].c.z = vertices_ptr[p3 * 3 + 2];
+    triangles_ptr[triangle_id].a =
+        Vector3f{vertices_ptr[p1 * 3 + 0], vertices_ptr[p1 * 3 + 1], vertices_ptr[p1 * 3 + 2]};
+    triangles_ptr[triangle_id].b =
+        Vector3f{vertices_ptr[p2 * 3 + 0], vertices_ptr[p2 * 3 + 1], vertices_ptr[p2 * 3 + 2]};
+    triangles_ptr[triangle_id].c =
+        Vector3f{vertices_ptr[p3 * 3 + 0], vertices_ptr[p3 * 3 + 1], vertices_ptr[p3 * 3 + 2]};
 }
 
 #endif
@@ -66,7 +63,7 @@ public:
         CHECK_INPUT(faces);
         // conver the vertices and faces into triangles
         const int32_t num_triangles = faces.size(0);
-        m_triangles = NULL;
+        m_triangles                 = NULL;
         cudaMalloc((void**)&m_triangles, sizeof(OptixTriangle) * num_triangles);
         const int32_t blocks = n_blocks_linear(num_triangles);
 
@@ -357,18 +354,18 @@ public:
             const int32_t p2_id   = faces_ptr[tri_id * 3 + 1];
             const int32_t p3_id   = faces_ptr[tri_id * 3 + 2];
             triangles_cpu[tri_id] = {
-                make_float3(
+                Vector3f{
                     vertices_ptr[p1_id * 3 + 0],
                     vertices_ptr[p1_id * 3 + 1],
-                    vertices_ptr[p1_id * 3 + 2]),
-                make_float3(
+                    vertices_ptr[p1_id * 3 + 2]},
+                Vector3f{
                     vertices_ptr[p2_id * 3 + 0],
                     vertices_ptr[p2_id * 3 + 1],
-                    vertices_ptr[p2_id * 3 + 2]),
-                make_float3(
+                    vertices_ptr[p2_id * 3 + 2]},
+                Vector3f{
                     vertices_ptr[p3_id * 3 + 0],
                     vertices_ptr[p3_id * 3 + 1],
-                    vertices_ptr[p3_id * 3 + 2]),
+                    vertices_ptr[p3_id * 3 + 2]},
                 (int32_t)tri_id};
         }
 
@@ -428,7 +425,7 @@ public:
 
 private:
 #ifdef ENABLE_OPTIX
-    RayCastingState m_state  = {};
+    RayCastingState m_state    = {};
     OptixTriangle* m_triangles = {};
 #else
 private:

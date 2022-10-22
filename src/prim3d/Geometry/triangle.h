@@ -3,55 +3,51 @@
 #include <Core/common.h>
 #include <Core/vec_math.h>
 
+#include <Eigen/Dense>
+#include <limits>
+
+using Eigen::Vector3f;
+
 namespace prim3d {
 struct Triangle {
-    PRIM_HOST_DEVICE float3 normal() const { return normalize(cross(b - a, c - a)); }
+    PRIM_HOST_DEVICE Vector3f normal() const { return (b - a).cross(c - a).normalized(); }
 
     // based on https://www.iquilezles.org/www/articles/intersectors/intersectors.htm
-    PRIM_HOST_DEVICE float ray_intersect(const float3 &ro, const float3 &rd, float3 &n) const {
-        float3 v1v0 = b - a;
-        float3 v2v0 = c - a;
-        float3 rov0 = ro - a;
-        n           = cross(v1v0, v2v0);
-        float3 q    = cross(rov0, rd);
-        float d     = 1.0f / dot(rd, n);
-        float u     = d * dot(-q, v2v0);
-        float v     = d * dot(q, v1v0);
-        float t     = d * dot(-n, rov0);
-        if (u < 0.0f || v < 0.0f || (u + v) > 1.0f || t < 0.0f) {
-            t = 1e38f;  // No intersection
+    PRIM_HOST_DEVICE float ray_intersect(
+        const Vector3f &ro, const Vector3f &rd, Vector3f &n) const {
+        Eigen::Vector3f v1v0 = b - a;
+        Eigen::Vector3f v2v0 = c - a;
+        Eigen::Vector3f rov0 = ro - a;
+        n                    = v1v0.cross(v2v0);
+        Eigen::Vector3f q    = rov0.cross(rd);
+        float d              = 1.0f / rd.dot(n);
+        float u              = d * -q.dot(v2v0);
+        float v              = d * q.dot(v1v0);
+        float t              = d * -n.dot(rov0);
+        if (u < 0.0f || u > 1.0f || v < 0.0f || (u + v) > 1.0f || t < 0.0f) {
+            t = std::numeric_limits<float>::max();  // No intersection
         }
         return t;
     }
 
-    PRIM_HOST_DEVICE float ray_intersect(const float3 &ro, const float3 &rd) const {
-        float3 n;
+    PRIM_HOST_DEVICE float ray_intersect(const Vector3f &ro, const Vector3f &rd) const {
+        Vector3f n;
         return ray_intersect(ro, rd, n);
     }
 
-    PRIM_HOST_DEVICE float3 centroid() const { return (a + b + c) / 3.0f; }
+    PRIM_HOST_DEVICE Vector3f centroid() const { return (a + b + c) / 3.0f; }
 
     PRIM_HOST_DEVICE float centroid(int axis) const {
-        switch (axis)
-        {
-        case 0:
-            return (a.x + b.x + c.x) / 3;
-        case 1:
-            return (a.y + b.y + c.y) / 3;
-        case 2:
-            return (a.z + b.z + c.z) / 3;
-        default:
-            return (a.x + b.x + c.x) / 3;
-        }
-    }
+		return (a[axis] + b[axis] + c[axis]) / 3;
+	}
 
-    PRIM_HOST_DEVICE void get_vertices(float3 v[3]) const {
+    PRIM_HOST_DEVICE void get_vertices(Vector3f v[3]) const {
         v[0] = a;
         v[1] = b;
         v[2] = c;
     }
 
-    float3 a, b, c;
+    Vector3f a, b, c;
     int32_t idx;
 };
 

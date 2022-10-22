@@ -14,7 +14,14 @@ option(BUILD_PYTHON_MODULE "Build the python module" ON)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CUDA_STANDARD 14)
 
-# Optix
+#########
+# Eigen #
+#########
+include_directories("third_party/eigen")
+
+#########
+# Optix #
+#########
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 find_package(Optix)
@@ -31,7 +38,9 @@ else()
 	message(WARNING "OptiX was not found.")
 endif()
 
-# torch extension
+###########
+# PyTorch #
+###########
 find_package(Torch REQUIRED)
 find_package(PythonLibs REQUIRED)
 find_library(TORCH_PYTHON_LIBRARY torch_python PATHS "${TORCH_INSTALL_PREFIX}/lib")

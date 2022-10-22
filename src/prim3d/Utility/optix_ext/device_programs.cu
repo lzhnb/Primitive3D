@@ -71,13 +71,13 @@ extern "C" __global__ void __closesthit__ch() {
     const int32_t prim_idx                = (int32_t)optixGetPrimitiveIndex();
     const OptixTriangle* triangles        = (OptixTriangle*)(sbt_data.data);
     const OptixTriangle hit_triangle      = triangles[prim_idx];
-    const float3 n                        = hit_triangle.normal();
+    const Vector3f n                      = hit_triangle.normal();
 
     optixSetPayload_0(prim_idx);
     optixSetPayload_1(float_as_int(optixGetRayTmax()));
-    optixSetPayload_2(float_as_int(n.x));
-    optixSetPayload_3(float_as_int(n.y));
-    optixSetPayload_4(float_as_int(n.z));
+    optixSetPayload_2(float_as_int(n.x()));
+    optixSetPayload_3(float_as_int(n.y()));
+    optixSetPayload_4(float_as_int(n.z()));
 }
 
 }  // namespace prim3d

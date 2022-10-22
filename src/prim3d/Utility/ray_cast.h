@@ -6,6 +6,7 @@
 #include <Geometry/triangle.h>
 #include <torch/script.h>
 
+#include <Eigen/Dense>
 #include <iostream>
 #include <memory>
 
@@ -15,6 +16,7 @@
 #include <Geometry/bvh.h>
 #endif
 
+using Eigen::Vector3f;
 using torch::Tensor;
 
 namespace prim3d {
