@@ -1,6 +1,6 @@
 # Copyright (c) Zhihao Liang. All rights reserved.
 from pathlib import Path
-from typing import List, Optional, Sequence, Tuple, Union, Callable
+from typing import List, Optional, Sequence, Tuple, Union
 
 import torch
 import numpy as np
