@@ -124,6 +124,7 @@ def save_mesh(
         vertices = torch.tensor(vertices)
     if isinstance(faces, np.ndarray):
         faces = torch.tensor(faces)
+    faces = faces.int()
 
     # process colors
     if colors is None:

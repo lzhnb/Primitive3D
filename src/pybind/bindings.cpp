@@ -1,7 +1,6 @@
 // Copyright 2022 Zhihao Liang
 #include <Core/utils.h>
 #include <Utility/marching_cubes.h>
-#include <Utility/marching_tetrahedras.h>
 #include <Utility/ray_cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -29,7 +28,6 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
 
     /* marching cubes */
     m.def("marching_cubes", &marching_cubes);
-    m.def("marching_tetrahedras", &marching_tetrahedras);
     m.def("save_mesh_as_ply", &save_mesh_as_ply);
 }
 } // namespace prim3d
