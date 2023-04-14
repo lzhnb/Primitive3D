@@ -13,7 +13,7 @@ namespace prim3d {
 
 void test();
 
-static constexpr float PI    = 3.14159265358979323846f;
+static constexpr float PI = 3.14159265358979323846f;
 static constexpr float SQRT2 = 1.41421356237309504880f;
 
 constexpr uint32_t n_threads_linear = 1024;
@@ -28,7 +28,9 @@ constexpr uint32_t n_blocks_linear(T n_elements) {
     return (uint32_t)div_round_up(n_elements, (T)n_threads_linear);
 }
 
-inline PRIM_HOST_DEVICE float sign(float x) { return copysignf(1.0, x); }
+inline PRIM_HOST_DEVICE float sign(float x) {
+    return copysignf(1.0, x);
+}
 
 template <typename T>
 PRIM_HOST_DEVICE T clamp(T val, T lower, T upper) {
@@ -36,10 +38,10 @@ PRIM_HOST_DEVICE T clamp(T val, T lower, T upper) {
 }
 
 template <typename T>
-PRIM_HOST_DEVICE void host_device_swap(T& a, T& b) {
+PRIM_HOST_DEVICE void host_device_swap(T &a, T &b) {
     T c(a);
     a = b;
     b = c;
 }
 
-}  // namespace prim3d
+} // namespace prim3d

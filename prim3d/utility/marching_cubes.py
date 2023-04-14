@@ -1,11 +1,10 @@
 # Copyright (c) Zhihao Liang. All rights reserved.
 from pathlib import Path
-from typing import List, Optional, Sequence, Tuple, Union, Callable
+from typing import List, Optional, Sequence, Tuple, Union
 
-import torch
 import numpy as np
-
 import prim3d.libPrim3D as _C
+import torch
 
 
 def scale_to_bound(scale: Union[float, Sequence]) -> Tuple[List[float]]:
@@ -124,6 +123,7 @@ def save_mesh(
         vertices = torch.tensor(vertices)
     if isinstance(faces, np.ndarray):
         faces = torch.tensor(faces)
+    faces = faces.int()
 
     # process colors
     if colors is None:

@@ -1,8 +1,9 @@
 # Copyright (c) Zhihao Liang. All rights reserved.
 import os
-import torch
+
 import mcubes
 import numpy as np
+import torch
 
 import prim3d
 

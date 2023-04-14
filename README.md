@@ -39,6 +39,8 @@ ray_caster.invoke(origins, dirs, depths, normals, primitive_ids)
 python examples/sphere.py
 # we extract the sdf of bunny via `mesh_to_sdf`
 python examples/bunny_sdf.py
+# example for extracting a sphere using marching tetrahedra
+python examples/sphere_tetrahedra.py
 ```
 
 ## TODO

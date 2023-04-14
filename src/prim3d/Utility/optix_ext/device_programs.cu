@@ -14,43 +14,36 @@ extern "C" __global__ void __raygen__rg() {
     const uint3 idx = optixGetLaunchIndex();
     const uint3 dim = optixGetLaunchDimensions();
 
-    const float3 ray_origin = make_float3(
-        params.ray_origins[idx.x * 3 + 0],
-        params.ray_origins[idx.x * 3 + 1],
-        params.ray_origins[idx.x * 3 + 2]);
-    const float3 ray_direction = make_float3(
-        params.ray_directions[idx.x * 3 + 0],
-        params.ray_directions[idx.x * 3 + 1],
-        params.ray_directions[idx.x * 3 + 2]);
+    const float3 ray_origin =
+        make_float3(params.ray_origins[idx.x * 3 + 0], params.ray_origins[idx.x * 3 + 1],
+                    params.ray_origins[idx.x * 3 + 2]);
+    const float3 ray_direction =
+        make_float3(params.ray_directions[idx.x * 3 + 0], params.ray_directions[idx.x * 3 + 1],
+                    params.ray_directions[idx.x * 3 + 2]);
 
-    unsigned int prim_idx, t, nx, ny, nz;  // holder for the payload
-    optixTrace(
-        params.handle,
-        ray_origin,
-        ray_direction,
-        0.0f,                      // Min intersection distance
-        1e16f,                     // Max intersection distance
-        0.0f,                      // rayTime -- used for motion blur
-        OptixVisibilityMask(255),  // Specify always visible
-        OPTIX_RAY_FLAG_DISABLE_ANYHIT,
-        0,  // SBT offset
-        1,  // SBT stride
-        0,  // missSBTIndex
-        // payload
-        prim_idx,
-        t,
-        nx,
-        ny,
-        nz);
+    unsigned int prim_idx, t, nx, ny, nz; // holder for the payload
+    optixTrace(params.handle, ray_origin, ray_direction,
+               0.0f,                     // Min intersection distance
+               1e16f,                    // Max intersection distance
+               0.0f,                     // rayTime -- used for motion blur
+               OptixVisibilityMask(255), // Specify always visible
+               OPTIX_RAY_FLAG_DISABLE_ANYHIT,
+               0, // SBT offset
+               1, // SBT stride
+               0, // missSBTIndex
+               // payload
+               prim_idx, t, nx, ny, nz);
 
     // Hit position
-    const int32_t ray_id         = idx.x;
+    const int32_t ray_id = idx.x;
     params.output_depths[ray_id] = int_as_float(t);
 
     // If a triangle was hit, prim_idx is its index, otherwise prim_idx is -1.
     // Write out the triangle's normal if it (abuse the direction buffer).
-    if ((int32_t)prim_idx == -1) { return; }
-    params.output_primitive_ids[ray_id]   = (int32_t)prim_idx;
+    if ((int32_t)prim_idx == -1) {
+        return;
+    }
+    params.output_primitive_ids[ray_id] = (int32_t)prim_idx;
     params.output_normals[ray_id * 3 + 0] = int_as_float(nx);
     params.output_normals[ray_id * 3 + 1] = int_as_float(ny);
     params.output_normals[ray_id * 3 + 2] = int_as_float(nz);
@@ -67,11 +60,11 @@ extern "C" __global__ void __miss__ms() {
 
 // closest-hit program
 extern "C" __global__ void __closesthit__ch() {
-    const RayCast::HitGroupData& sbt_data = *(RayCast::HitGroupData*)optixGetSbtDataPointer();
-    const int32_t prim_idx                = (int32_t)optixGetPrimitiveIndex();
-    const OptixTriangle* triangles        = (OptixTriangle*)(sbt_data.data);
-    const OptixTriangle hit_triangle      = triangles[prim_idx];
-    const Vector3f n                      = hit_triangle.normal();
+    const RayCast::HitGroupData &sbt_data = *(RayCast::HitGroupData *)optixGetSbtDataPointer();
+    const int32_t prim_idx = (int32_t)optixGetPrimitiveIndex();
+    const OptixTriangle *triangles = (OptixTriangle *)(sbt_data.data);
+    const OptixTriangle hit_triangle = triangles[prim_idx];
+    const Vector3f n = hit_triangle.normal();
 
     optixSetPayload_0(prim_idx);
     optixSetPayload_1(float_as_int(optixGetRayTmax()));
@@ -80,4 +73,4 @@ extern "C" __global__ void __closesthit__ch() {
     optixSetPayload_4(float_as_int(n.z()));
 }
 
-}  // namespace prim3d
+} // namespace prim3d

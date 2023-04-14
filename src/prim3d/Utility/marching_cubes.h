@@ -11,14 +11,11 @@ using std::vector;
 using torch::Tensor;
 
 namespace prim3d {
-vector<Tensor> marching_cubes(
-    const Tensor& density_grid,
-    const float thresh,
-    const vector<float> lower,
-    const vector<float> upper);
+vector<Tensor> marching_cubes(const Tensor &density_grid, const float thresh,
+                              const vector<float> lower, const vector<float> upper);
 
 void save_mesh_as_ply(const std::string filename, Tensor vertices, Tensor faces, Tensor colors);
-}  // namespace prim3d
+} // namespace prim3d
 
 // Triangle table for marching cubes
 static PRIM_DEVICE int8_t triangle_table[256][16] = {
