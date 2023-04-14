@@ -30,12 +30,12 @@
 #define FILE_LINE __FILE__ ":" STR(__LINE__)
 
 /// Checks the result of a cudaXXXXXX call and throws an error on failure
-#define CUDA_CHECK(x)                                                                              \
-    do {                                                                                           \
-        cudaError_t result = x;                                                                    \
-        if (result != cudaSuccess)                                                                 \
-            throw std::runtime_error(                                                              \
-                std::string(FILE_LINE " " #x " failed with error ") + cudaGetErrorString(result)); \
+#define CUDA_CHECK(x)                                                                      \
+    do {                                                                                   \
+        cudaError_t result = x;                                                            \
+        if (result != cudaSuccess)                                                         \
+            throw std::runtime_error(std::string(FILE_LINE " " #x " failed with error ") + \
+                                     cudaGetErrorString(result));                          \
     } while (0)
 
 #ifdef ENABLE_OPTIX
@@ -49,13 +49,12 @@
 
 #define OPTIX_CHECK_LOG(x)                                                                      \
     do {                                                                                        \
-        OptixResult res                  = x;                                                   \
+        OptixResult res = x;                                                                    \
         const size_t sizeof_log_returned = sizeof_log;                                          \
-        sizeof_log                       = sizeof(log); /* reset sizeof_log for future calls */ \
+        sizeof_log = sizeof(log); /* reset sizeof_log for future calls */                       \
         if (res != OPTIX_SUCCESS) {                                                             \
-            throw std::runtime_error(                                                           \
-                std::string("Optix call '" #x "' failed. Log:\n") + log +                       \
-                (sizeof_log_returned == sizeof_log ? "" : "<truncated>"));                      \
+            throw std::runtime_error(std::string("Optix call '" #x "' failed. Log:\n") + log +  \
+                                     (sizeof_log_returned == sizeof_log ? "" : "<truncated>")); \
         }                                                                                       \
     } while (0)
 #endif

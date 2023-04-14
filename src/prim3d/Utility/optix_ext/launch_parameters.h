@@ -14,18 +14,20 @@ namespace prim3d {
 
 // NOTE: OptixTriangle just contain a,b,c (for the trianglearray)
 struct OptixTriangle {
-    SUTIL_HOSTDEVICE Vector3f normal() const { return (b - a).cross(c - a).normalized(); }
+    SUTIL_HOSTDEVICE Vector3f normal() const {
+        return (b - a).cross(c - a).normalized();
+    }
 
     Vector3f a, b, c;
 };
 
 struct RayCast {
     struct Params {
-        float* ray_origins;
-        float* ray_directions;
-        float* output_depths;
-        float* output_normals;
-        int32_t* output_primitive_ids;
+        float *ray_origins;
+        float *ray_directions;
+        float *output_depths;
+        float *output_normals;
+        int32_t *output_primitive_ids;
         OptixTraversableHandle handle;
     };
     struct RayGenData {};
@@ -34,4 +36,4 @@ struct RayCast {
         OptixTriangle *data;
     };
 };
-}  // namespace prim3d
+} // namespace prim3d

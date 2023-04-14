@@ -7,5 +7,7 @@
 #include "vec_math.h"
 
 namespace prim3d {
-void test() { std::cout << "hello world!" << std::endl; }
-}  // namespace prim3d
+void test() {
+    std::cout << "hello world!" << std::endl;
+}
+} // namespace prim3d
