@@ -2,7 +2,8 @@
 import prim3d.libPrim3D as _C
 
 from .misc import Timer
-from .utility import create_raycaster, marching_cubes, save_mesh, marching_tetrahedras
+from .utility import (create_raycaster, marching_cubes, marching_tetrahedras,
+                      save_mesh)
 from .version import __version__
 
 ENABLE_OPTIX = _C.enable_optix
